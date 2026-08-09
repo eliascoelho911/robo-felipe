@@ -1,0 +1,74 @@
+# ---------- Arduino / ESP32 ----------
+# Build outputs (Arduino CLI / IDE)
+/build/
+/build-*/
+*.bin
+*.elf
+*.hex
+*.map
+*.partitions.bin
+*.ota
+# Arduino IDE / CLI caches
+.arduinoIDE/
+*.tmp
+# PlatformIO
+.pio/
+.piolibdeps/
+platformio.ini
+
+# ---------- C / C++ ----------
+*.o
+*.obj
+*.a
+*.so
+*.exe
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+venv/
+.venv/
+env/
+.env
+.python-version
+
+# ---------- Artefatos de teste / runtime ----------
+# Áudio e logs gerados pelas amostras (stream_mic_serial, etc.)
+/audio.raw
+/audio.wav
+/print.log
+*.log
+
+# ---------- IDEs e editores ----------
+# VS Code: mantemos .vscode/ (arduino.json, c_cpp_properties.json) versionado,
+# mas ignoramos arquivos sensíveis de máquina / cache.
+.vscode/*.bak
+.vscode/.ropeproject/
+# JetBrains
+.idea/
+*.iml
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# ---------- SO ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+# Metadados ADS do Windows (baixados de outra máquina / navegador)
+*:Zone.Identifier
+*:Zone.Identifier:*
+
+# ---------- Conteúdo de terceiros / não versionado ----------
+# Materiais brutos de tutoriais da ACEBOTT/QD021 (PDFs, drivers, instaladores,
+# zips de bibliotecas, .sb3): ~300 MB de binários de terceiros com questões de
+# licença/distribuição. Manter fora do repositório.
+/tutorial_raw/
