@@ -1,6 +1,13 @@
-# ---------- Arduino / ESP32 ----------
-# Build outputs (Arduino CLI / IDE)
+# ---------- ESP-IDF (firmware do cão — ADR-014) ----------
 /build/
+/sdkconfig.old
+/managed_components/
+/dependencies.lock
+# Dependências baixadas pelo Component Registry (servo_dog_ctrl, espressif/servo, ...)
+/components.lock
+
+# ---------- Arduino / ESP32 (referência do tutorial ACEBOTT) ----------
+# Build outputs (Arduino CLI / IDE)
 /build-*/
 *.bin
 *.elf
@@ -16,6 +23,15 @@
 .piolibdeps/
 platformio.ini
 
+# ---------- Chaves de assinatura OTA (ADR-007) ----------
+# Chave privada RSA NUNCA entra no repo — fica em CI secret / máquina do dev.
+priv_key.pem
+*.private.pem
+private_key*.pem
+*.sign
+# Imagem assinada é artefato de release, não de source.
+fw.img
+
 # ---------- C / C++ ----------
 *.o
 *.obj
@@ -23,7 +39,7 @@ platformio.ini
 *.so
 *.exe
 
-# ---------- Python ----------
+# ---------- Python (amostras de áudio/stream) ----------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -43,6 +59,18 @@ env/
 /audio.wav
 /print.log
 *.log
+
+# ---------- Android (app relay) ----------
+# Paths locais e caches do Gradle (o android/.gitignore já cobre; repetimos
+# por segurança caso o submodule seja tratado como tree única).
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/.idea/
+android/captures/
+android/.cxx/
+android/.externalNativeBuild/
 
 # ---------- IDEs e editores ----------
 # VS Code: mantemos .vscode/ (arduino.json, c_cpp_properties.json) versionado,
