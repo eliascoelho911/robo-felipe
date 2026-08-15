@@ -50,18 +50,9 @@ que alguém possa começar a construir sem precisar decidir nada primeiro.
 
 - [01 — Provedores de nuvem para ASR, NLP e TTS](./issues/01-cloud-providers-voice.md) — Deepgram Nova-3 (ASR streaming), regras+gpt-4o-mini (NLP), Azure Neural TTS (TTS); ~$0,10–0,60/mês
 - [09 — Provedores de voz self-hosted (i5/8GB CPU)](./issues/09-selfhosted-voice-providers.md) — Viável: faster-whisper small int8 + regras+Qwen2.5-3B (Ollama) + Piper pt_BR-cadu-medium; ~2,8–3,6s; box na LAN via HTTP preserva ADR-002; custo ~$3–5/mês eletricidade (ou ~$0 se box já on); decisão é de valores (privacidade/offline), não de custo
+- [10 — Arquitetura do "cérebro" backend (LangGraph + memória persistente)](./issues/10-cerebro-backend-langgraph.md) — Backend VPS (Hetzner ~$4/mês) + Python/LangGraph orquestra ASR→LLM→TTS; PostgresSaver (sessão) + PostgresStore/pgvector (longa prazo); WSS ao relay; tool calls ao ESP32 via relay; LLM vira caminho primário (conversa, perguntas, web search, lição de casa); ADR-015; ~$8,40/mês
 
 ## Not yet specified
-
-### F0: Decisão de produto — cloud (01) vs self-hosted (09) vs híbrido
-
-Pesquisas 01 e 09 estão fechadas; falta a **decisão de produto**: qual
-stack adotar como primária. Gradua como ticket de grilling quando o autor
-quiser decidir — é HITL (depende dos valores do autor: privacidade do
-sobrinho, tolerância a custo, desejo de offline, gosto por hobby/setup).
-Insight da pesquisa 09: **Opção A mantém ambos** (box em casa, cloud fora),
-logo a decisão pode ser "híbrido" em vez de binária. Não bloqueia os
-tickets 02–08 (eles são agnósticos ao provedor).
 
 ### F1: Serviço de backend para CV (diferido pelo autor)
 
@@ -75,11 +66,13 @@ graduar desta névoa quando a discussão começar.
 
 ### F2: App Android — breakdown de implementação
 
-A arquitetura é decidida (WebSocket relay, TLS termination, ASR→NLP→TTS
-orchestration — ver ADRs 002/006). Mas o breakdown de implementação é
-névoa: WebSocket client, permissões, integração com providers, reprodução
-de TTS, gestão de sessão. Gradua conforme os tickets de cloud providers
-(01) e WebSocket protocol (03) são resolvidos.
+A arquitetura é decidida (backend VPS + LangGraph orquestra, WebSocket
+relay, TLS termination — ver ADRs 002/006/015 e tickets 01/10). O relay
+Android vira "tunnel + tool executor". Mas o breakdown de implementação
+é névoa: WebSocket client WSS ao backend, WebSocket server ao ESP32 na
+LAN, executor de tool calls, UI. Gradua conforme os tickets 03 (protocolo
+WebSocket ESP32↔relay) e o protocolo WSS relay↔backend (a definir) forem
+resolvidos.
 
 ### F3: Arquitetura de tasks FreeRTOS
 
@@ -87,6 +80,26 @@ Core affinity (Core 0: rede+áudio I2S; Core 1: servos+KWS+display+IMU —
 ver ADR-001), task graph, prioridades, tamanhos de stack. Emergem durante
 a implementação — não é decisão arquitetural, é design de implementação.
 Pode graduasr como tickets específicas quando a implementação começar.
+
+### F4: Loop de tool calls — sincronismo e paralelismo
+
+Quando o LLM emite múltiplos tool calls no mesmo turno (ex:
+`move_dog(FORWARD)` + `web_search("notícias hoje")`), o backend (LangGraph)
+precisa decidir: paralelizar (mover o robô não bloqueia a busca) ou
+serializar? O ToolNode do LangGraph suporta paralelo, mas o sincronismo
+com TTS streaming ("Ok, andando enquanto vejo as notícias...") é design
+de grafo. Decisão de implementação quando o grafo LangGraph for desenhado.
+
+### F5: Robustez — fallback quando o backend cai
+
+Se o VPS cair (deploy errado, manutenção, queda da nuvem), o robô perde o
+cérebro. O KWS local (ADR-005) continua detectando a palavra-chave e os
+comandos de movimento por regras (fast-path) ainda funcionam no relay,
+mas conversa/perguntas/lição de casa caem. Decidir: (a) aceitar a
+degradação, (b) fallback a um LLM no próprio relay (gpt-4o-mini direto,
+sem memória persistente), (c) health check e notificar o sobrinho ("meu
+cérebro tirou uma soneca, vamos só brincar agora"). Decisão de
+resiliência de produto.
 
 ## Out of scope
 
