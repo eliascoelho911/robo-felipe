@@ -49,8 +49,19 @@ que alguém possa começar a construir sem precisar decidir nada primeiro.
 ## Decisions so far
 
 - [01 — Provedores de nuvem para ASR, NLP e TTS](./issues/01-cloud-providers-voice.md) — Deepgram Nova-3 (ASR streaming), regras+gpt-4o-mini (NLP), Azure Neural TTS (TTS); ~$0,10–0,60/mês
+- [09 — Provedores de voz self-hosted (i5/8GB CPU)](./issues/09-selfhosted-voice-providers.md) — Viável: faster-whisper small int8 + regras+Qwen2.5-3B (Ollama) + Piper pt_BR-cadu-medium; ~2,8–3,6s; box na LAN via HTTP preserva ADR-002; custo ~$3–5/mês eletricidade (ou ~$0 se box já on); decisão é de valores (privacidade/offline), não de custo
 
 ## Not yet specified
+
+### F0: Decisão de produto — cloud (01) vs self-hosted (09) vs híbrido
+
+Pesquisas 01 e 09 estão fechadas; falta a **decisão de produto**: qual
+stack adotar como primária. Gradua como ticket de grilling quando o autor
+quiser decidir — é HITL (depende dos valores do autor: privacidade do
+sobrinho, tolerância a custo, desejo de offline, gosto por hobby/setup).
+Insight da pesquisa 09: **Opção A mantém ambos** (box em casa, cloud fora),
+logo a decisão pode ser "híbrido" em vez de binária. Não bloqueia os
+tickets 02–08 (eles são agnósticos ao provedor).
 
 ### F1: Serviço de backend para CV (diferido pelo autor)
 
