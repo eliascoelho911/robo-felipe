@@ -23,13 +23,14 @@ Restrições concretas:
    ~115–125 KB — apertado para KWS + I2S bidirecional + tasks simultâneos.
 2. **AP+STA simultâneo:** se o ESP32 mesmo fizesse TLS para a nuvem, ele
    ainda precisaria manter o AP ativo para o app de controle (como no
-   tutorial ACEBOTT original). AP+STA concorrentes compartilham o rádio
-   e causam glitches de áudio (underruns no ring buffer de playback) em
-   rajadas de tráfego.
+   tutorial de origem do kit bípede). AP+STA concorrentes compartilham o
+   rádio e causam glitches de áudio (underruns no ring buffer de playback)
+   em rajadas de tráfego.
 3. **Manutenção de certificados:** atualizar CA bundles no ESP32 a cada
    rotação de certificado do provedor é fricção operacional alta.
 4. **O usuário já carrega um smartphone** — o app mobile de controle
-   (estendido do ACEBOTT ou próprio) já é parte do produto.
+   (estendido do app do kit de origem ou próprio) já é parte do produto
+   nas variantes bípede/quadrúpede.
 
 ## Decision
 
@@ -50,14 +51,14 @@ Topologia resultante:
                      │                  │     • UI de controle
                      └────────┬────────┘  ← WiFi casa ou 4G/5G
                               │ HTTP / WebSocket (LAN, sem TLS)
-                     ┌────────┴────────────────────┐
-                     │  ESP32-WROOM-32E-N4         │
-                     │  • STA no router de casa    │
-                     │  • KWS local (TinyML)       │
-                     │  • Mic I2S → stream up      │
-                     │  • Speaker I2S ← stream down│
-                     │  • Servos + ultrassom       │
-                     └─────────────────────────────┘
+                      ┌────────┴────────────────────┐
+                      │  ESP32-WROOM-32E-N4         │
+                      │  • STA no router de casa    │
+                      │  • KWS local (TinyML)       │
+                      │  • Mic I2S → stream up      │
+                      │  • Speaker I2S ← stream down│
+                      │  • Atuadores + sensores     │
+                      └─────────────────────────────┘
 ```
 
 Consequências arquiteturais diretas:
@@ -152,6 +153,6 @@ Consequências arquiteturais diretas:
 - Se no futuro for desejável voz sempre-on sem app em foreground,
   reconsiderar: (a) um relay fixo em casa (RPi), ou (b) migrar o ESP32
   para módulo com PSRAM e fazer TLS local — ver ADR-001 notas.
-- Esta ADR torna **obsoleto o modo AP** do tutorial ACEBOTT original
-  (Lição 7). O app passa a controlar o robô via LAN/STA, não via AP
+- Esta ADR torna **obsoleto o modo AP** do tutorial de origem (kit
+  bípede, Lição 7). O app passa a controlar o robô via LAN/STA, não via AP
   dedicado do ESP32.

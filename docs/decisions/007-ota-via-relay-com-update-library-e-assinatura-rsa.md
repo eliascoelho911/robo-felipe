@@ -14,7 +14,7 @@ canal de controle já está aberto, autenticado na LAN, e transporta
 mensagens binárias e textuais.
 
 Conforme o produto evoluir, o firmware do ESP32 precisará ser
-atualizado — novas features de voz, ajustes de servo, retraining do
+atualizado — novas features de voz, ajustes de atuadores, retraining do
 modelo KWS (ADR-005), correções de bugs. Reprogramar por cabo USB a
 cada mudança é impraticável para o usuário final.
 
@@ -115,7 +115,7 @@ No 1º boot pós-OTA, o firmware novo roda em estado
 - WiFi conecta?
 - I2S mic lê amostras?
 - Modelo KWS carrega?
-- Servos respondem a um comando de teste?
+- Atuadores respondem a um comando de teste?
 
 Se tudo OK → `esp_ota_mark_app_valid_cancel_rollback()` (commit).
 Se falha → `esp_ota_mark_app_invalid_rollback_and_reboot()` (reverte).
@@ -219,7 +219,7 @@ do robô (obtida via WS no handshake inicial), e só empurra se `> current`.
   bootloader reverte para a anterior automaticamente. Sem
   intervenção, sem JTAG.
 - **Self-test pós-OTA** — só faz commit da nova imagem se WiFi, I2S,
-  KWS e servos passarem nos diagnósticos. Catches regressões
+  KWS e atuadores passarem nos diagnósticos. Catches regressões
   silenciosas.
 - **Unifica mecanismo de update** — o mesmo `Update.write()` serve
   para atualizar partição `data` (modelo KWS) no futuro, se o modelo

@@ -1,12 +1,4 @@
-# ---------- ESP-IDF (firmware do cão — ADR-014) ----------
-/build/
-/sdkconfig.old
-/managed_components/
-/dependencies.lock
-# Dependências baixadas pelo Component Registry (servo_dog_ctrl, espressif/servo, ...)
-/components.lock
-
-# ---------- Arduino / ESP32 (referência do tutorial ACEBOTT) ----------
+# ---------- Arduino / ESP32 (samples de referência) ----------
 # Build outputs (Arduino CLI / IDE)
 /build-*/
 *.bin
@@ -96,7 +88,7 @@ desktop.ini
 *:Zone.Identifier:*
 
 # ---------- Conteúdo de terceiros / não versionado ----------
-# Materiais brutos de tutoriais da ACEBOTT/QD021 (PDFs, drivers, instaladores,
-# zips de bibliotecas, .sb3): ~300 MB de binários de terceiros com questões de
+# Materiais brutos de tutoriais do kit de origem (PDFs, drivers, instaladores,
+# zips de bibliotecas, .sb3): binários de terceiros com questões de
 # licença/distribuição. Manter fora do repositório.
 /tutorial_raw/

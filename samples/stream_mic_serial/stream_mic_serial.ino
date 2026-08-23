@@ -4,7 +4,8 @@
  * Captura audio do GY-SPH0645 (I2S 48 kHz STEREO 32-bit) e faz stream
  * via Serial USB em 16 kHz 16-bit mono (decimado por 3).
  *
- * Pinagem:
+ * Pinagem (referência ESP32-WROOM-32E-N4; remapear GPIOs para ESP32-S3
+ * na variante Tamagotchi — ver ADR-016):
  *   GY-SPH0645   ->  ESP32-WROOM-32E
  *   VCC          ->  3V3
  *   GND          ->  GND

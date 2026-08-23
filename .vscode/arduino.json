@@ -3,5 +3,5 @@
     "board": "esp32:esp32:esp32",
     "programmer": "esptool",
     "port": "/dev/ttyUSB0",
-    "sketch": "samples/biped_robot_full/biped_robot_full.ino"
+    "sketch": "samples/stream_mic_serial/stream_mic_serial.ino"
 }

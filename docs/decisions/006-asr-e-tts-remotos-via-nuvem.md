@@ -48,7 +48,7 @@ ESP32                         Smartphone (relay)            Nuvem
   │  (resposta, playback I2S)        │                       │
   │                                  │                       │
   │  executa ação local              │                       │
-  │  (servos, etc.)                  │                       │
+  │  (atuadores, etc.)               │                       │
 ```
 
 ## Decision
@@ -95,7 +95,8 @@ Candidatos:
 - **ASR:** Google Speech-to-Text (streaming), Azure Speech, OpenAI
   Whisper API (batch), Deepgram (streaming, baixa latência).
 - **NLP/decisão:** LLM (OpenAI, Claude, Gemini) ou regra simples por
-  intents. Ação pode ser executada no ESP32 (servos) ou respondida em voz.
+  intents. Ação pode ser executada no ESP32 (atuadores/display) ou
+  respondida em voz.
 - **TTS:** Google TTS, Azure Neural TTS, ElevenLabs, OpenAI TTS.
 A escolha concreta depende de custo, latência e qualidade desejada —
 decisão de produto, não de arquitetura.
@@ -194,7 +195,7 @@ decisão de produto, não de arquitetura.
   → resposta falada. Inerente a assistentes de voz na nuvem (Alexa e
   Google Assistant têm latência similar).
 - **Custo de API** — ASR, LLM e TTS têm custo por uso. Mitigado por
-  caching de intenções comuns e por responder comandos locais (servos)
+  caching de intenções comuns e por responder comandos locais (atuadores)
   sem chamar a nuvem quando a intenção é clara.
 - **Privacidade** — áudio do comando é enviado à nuvem (após a palavra-
   chave, não continuamente). O VAD+KWS local (ADR-005) garante que só
@@ -208,12 +209,12 @@ decisão de produto, não de arquitetura.
 - O **NLP/decisão** pode ser um LLM (para linguagem natural flexível) ou
   um classificador de intents simples (para comandos conhecidos, mais
   barato e rápido). A escolha é de produto e pode evoluir; o firmware do
-  ESP32 não depende disso — ele só executa ações (servos, etc.) que o
-  relay/comando determinar, ou reproduz o áudio de TTS recebido.
-- Ação local (servos) e resposta em voz podem ser **simultâneas**: o
-  relay envia o áudio de TTS enquanto já comandou o ESP32 a mover os
-  servos. Ex.: "Hey Felipe, dá um passinho" → relay diz ao ESP32
-  "MOTION:FORWARD_STEP" (servos andam) e ao mesmo tempo envia TTS
+  ESP32 não depende disso — ele só executa ações (atuadores/display, etc.)
+  que o relay/comando determinar, ou reproduz o áudio de TTS recebido.
+- Ação local (atuadores) e resposta em voz podem ser **simultâneas**: o
+  relay envia o áudio de TTS enquanto já comandou o ESP32 a acionar os
+  atuadores. Ex.: "Hey Felipe, dá um passinho" → relay diz ao ESP32
+  "MOTION:FORWARD_STEP" (atuadores executam) e ao mesmo tempo envia TTS
   "Ok, andando!" (speaker toca).
 - O **buffer de playback** no ESP32 deve ser de 8 KB (vs 4 KB do mic)
   para amortizar jitter do WiFi e da nuvem — ver ADR-002 sobre glitches.

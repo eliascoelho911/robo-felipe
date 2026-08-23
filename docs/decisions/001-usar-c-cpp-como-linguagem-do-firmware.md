@@ -8,19 +8,22 @@ Accepted
 
 ## Context
 
-O projeto **robo-felipe** é um robô bípede construído sobre o módulo
-**ESP32-WROOM-32E-N4** (chip ESP32-D0WD-V3 rev. 301, 4 MB de flash,
-520 KB de SRAM — ~333 KB livres — **sem PSRAM**). O kit de origem
-(tutorial ACEBOTT) já fornece uma biblioteca de controle dos 4 servos
-(`ACB_Biped_Robot.h`) escrita em C/C++ para o Arduino IDE, com
-sequências de keyframes em arrays `PROGMEM` e um player
-`Servo_PROGRAM_Run()` bloqueante baseado em `delay()`.
+O projeto **robo-felipe** é um robô conversacional de voz construído sobre
+o módulo **ESP32-WROOM-32E-N4** (chip ESP32-D0WD-V3 rev. 301, 4 MB de
+flash, 520 KB de SRAM — ~333 KB livres — **sem PSRAM**). O projeto
+originou-se de um kit bípede ACEBOTT (variante arquivada), cuja
+biblioteca de controle dos 4 servos (`ACB_Biped_Robot.h`) escrita em
+C/C++ para o Arduino IDE — com sequências de keyframes em arrays
+`PROGMEM` e um player `Servo_PROGRAM_Run()` bloqueante baseado em
+`delay()` — motivou a escolha de linguagem documentada nesta ADR.
 
-O robô atual executa: marcha para frente/trás/esquerda/direita, dança,
-seguidor por ultrassom, desvio de obstáculos, controle via serial, web
-(AP + HTTP) e app mobile (WiFi). Pretende-se **adicionar**:
+O robô, na variante de corpo da época (bípede/quadrúpede), executava:
+marcha para frente/trás/esquerda/direita, dança, seguidor por ultrassom,
+desvio de obstáculos, controle via serial, web (AP + HTTP) e app mobile
+(WiFi). Pretendia-se **adicionar** (subsistema de voz, reutilizado pela
+variante Tamagotchi — ver ADR-016):
 
-- **Microfone** MEMS I2S (SPH0645LM4H — ver `hardware/BOM-audio.md`
+- **Microfone** MEMS I2S (SPH0645LM4H — ver `hardware/audio/BOM-audio.md`
   para análise de datasheets; o INMP441 é alternativa de orçamento)
   para captura de áudio.
 - **Saída de som** via amp I2S (ex.: MAX98357A) para playback.
@@ -30,9 +33,10 @@ seguidor por ultrassom, desvio de obstáculos, controle via serial, web
 
 Os requisitos de tempo real são os fator determinante:
 
-1. **4 servos com timing de keyframes** — cada passo de animação
-   depende de `delay()` preciso entre atualizações de PWM. Jitter de
-   milissegundos destrói a estabilidade da marcha.
+1. **4 servos com timing de keyframes** (na variante de corpo da época)
+   — cada passo de animação depende de `delay()` preciso entre
+   atualizações de PWM. Jitter de milissegundos destrói a estabilidade
+   da marcha.
 2. **Áudio I2S bidirecional** — captura e playback simultâneos via DMA.
    Pausas no processamento causam xruns (clics/dropouts audíveis).
 3. **WiFi AP ativo** concorrente com servos e áudio — o stack de rede
@@ -54,10 +58,10 @@ estendendo-a.
 
 Justificativas diretas:
 
-- **Biblioteca existente é C/C++** — reusar `ACB_Biped_Robot.h` sem
-  reescrita. Portar para MicroPython exigiria reimplementar o player de
-  keyframes e as tabelas `PROGMEM` em Python puro, perdendo a vantagem
-  do kit.
+- **Biblioteca existente é C/C++** — reusar `ACB_Biped_Robot.h` (kit de
+  origem) sem reescrita. Portar para MicroPython exigiria reimplementar o
+  player de keyframes e as tabelas `PROGMEM` em Python puro, perdendo a
+  vantagem do kit.
 - **FreeRTOS dá concorrência determinística** — 2 cores do ESP32
   alocados por task: Core 0 (PRO_CPU) para rede + áudio I2S (DMA),
   Core 1 (APP_CPU) para motores + sensores + display + máquina de
@@ -142,8 +146,8 @@ Justificativas diretas:
   - Separação limpa: tempo real num chip, lógica/telemetria no outro.
   - MicroPython roda com folga no segundo MCU.
 - **Contras:**
-  - **Mais hardware** — custo, espaço, peso e consumo no robô bípede
-    (que já é restrito pelo kit).
+  - **Mais hardware** — custo, espaço, peso e consumo no robô (que já é
+    restrito pelo kit de origem).
   - **Link de comunicação (UART/I2C) vira ponto de falha** e fonte de
     latência.
   - **Overkill** para o escopo — o ESP32 dual-core com FreeRTOS já
@@ -155,8 +159,8 @@ Justificativas diretas:
 
 ### Positivas
 
-- **Reuso da `ACB_Biped_Robot`** e compatibilidade com o tutorial de
-  origem — baixa fricção para quem aprendeu com o kit.
+- **Reuso da `ACB_Biped_Robot`** (kit de origem) e compatibilidade com
+  o tutorial de origem — baixa fricção para quem aprendeu com o kit.
 - **RAM sob controle:** ~333 KB livres são suficientes para WiFi + 4
   servos + OLED + I2S in/out com folga de ~150 KB, desde que buffers
   sejam fixos e evite-se alocação dinâmica em loops quentes.

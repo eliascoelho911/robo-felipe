@@ -1,8 +1,10 @@
 # Esquema Técnico: ESP32-WROOM-32E-N4 + GY-SPH0645 + MAX98357A
 
 > Esquema de interligação do subsistema de áudio do robô Felipe.
-> Pinagem e specs validados contra `BOM-audio.md` e
-> `esp32-wroom-32e-n4.md` (diagnóstico de hardware confirmado).
+> Pinagem e specs validados contra `BOM-audio.md` (diagnóstico de hardware
+> confirmado no ESP32-WROOM-32E-N4, MCU das variantes bípede/quadrúpede;
+> na variante Tamagotchi o MCU é ESP32-S3 com PSRAM — ADR-016 — e os
+> GPIOs do I2S devem ser remapeados).
 > Diagramas Mermaid gerados conforme a skill `mermaid-diagram-generator`.
 
 ---
@@ -195,7 +197,7 @@ sequenceDiagram
 
 ## 7. Referências
 
-- `hardware/esp32-wroom-32e-n4.md` — specs e diagnóstico do MCU
-- `hardware/BOM-audio.md` — pinagem I2S e specs de SPH0645LM4H / MAX98357A
+- `hardware/audio/BOM-audio.md` — pinagem I2S e specs de SPH0645LM4H / MAX98357A
+- Datasheet ESP32-WROOM-32E (Espressif) — specs e diagnóstico do MCU das variantes bípede/quadrúpede
 - Datasheet SPH0645LM4H-B (Knowles) — Adafruit CDN
 - Datasheet MAX98357A (Maxim/Analog Devices) — Adafruit CDN

@@ -40,7 +40,7 @@ Restrições do hardware (ESP32-WROOM-32E-N4, sem PSRAM, ver ADR-001):
   participação da CPU; a task de VAD/KWS consome do ring, não do I2S
   diretamente. **A captura I2S roda a 48 kHz** (requisito do
   SPH0645LM4H, que suporta 32–64 kHz nativamente — ver
-  `hardware/BOM-audio.md`); uma etapa de **decimação FIR por 3**
+  `hardware/audio/BOM-audio.md`); uma etapa de **decimação FIR por 3**
   (48 → 16 kHz) roda entre o ring do I2S e o ring de inferência,
   consumindo ~1–2% de um core. A pipeline de VAD/KWS em si opera a
   16 kHz, como especificado abaixo.
@@ -164,8 +164,8 @@ Especificações do modelo-alvo:
 ### Negativas
 
 - **Modelo precisa ser treinado** para "Hey Felipe" — exige dataset de
-  áudio da palavra (com data augmentation para ruído de servo e
-  ambiente). Edge Impulse acelera isso, mas não é zero trabalho.
+  áudio da palavra (com data augmentation para ruído de ambiente e dos
+  atuadores do robô). Edge Impulse acelera isso, mas não é zero trabalho.
 - **Precisão limitada** do modelo pequeno (~30 KB) — pode haver falsos
   positivos (palavras parecidas) ou falsos negativos (sotaque diferente).
   Tuning de threshold e dataset diverso mitigam, mas não eliminam.
@@ -179,7 +179,7 @@ Especificações do modelo-alvo:
 - **Microfone: SPH0645LM4H** (Adafruit #3421). SNR 65 dB(A), I2S
   24-bit, suporta 32–64 kHz nativamente. Não faz 16 kHz direto (BCLK
   mínimo 2.048 MHz), por isso a captura roda a 48 kHz com decimação
-  FIR por 3 para 16 kHz. Análise completa em `hardware/BOM-audio.md`.
+  FIR por 3 para 16 kHz. Análise completa em `hardware/audio/BOM-audio.md`.
   Alternativa de orçamento: INMP441 (faz 16 kHz nativo, SNR ~61 dB(A),
   risco de clone no AliExpress).
 - **Decimação 48 → 16 kHz**: filtro FIR anti-alias simples (taps
@@ -193,8 +193,8 @@ Especificações do modelo-alvo:
 - O hop de inferência (200–500 ms) define a latência vs o custo de CPU
   — ajustar empiricamente.
 - Para gerar o dataset de "Hey Felipe", gravar ~500–1000 amostras com
-  vozes diferentes + ruído de servo + música ambiente; usar Edge Impulse
-  para augmentation e treino.
+  vozes diferentes + ruído de ambiente + ruído dos atuadores do robô;
+  usar Edge Impulse para augmentation e treino.
 - O evento "keyword detectada" sinaliza a `task_audio_net` via queue do
   FreeRTOS (ver ADR-006 para o protocolo de stream).
 - Manter **tap-to-talk** no app como fallback de UX (ver ADR-005,

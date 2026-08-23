@@ -24,7 +24,7 @@ definitiva é o **SPH0645LM4H** por três razões:
    (fontes secundárias — não consegui obter o datasheet oficial do
    INMP441). Os 4 dB extras de SNR melhoram diretamente a precisão do
    KWS em ambientes ruidosos — que é exatamente o caso de um robô
-   bípede com servos zumbindo ao lado.
+   conversacional com atuadores zumbindo ao lado.
 
 2. **Em produção, de fornecedor confiável**: O SPH0645LM4H é o
    substituto oficial do ICS-43434 (que foi descontinuado — confirmado
@@ -233,7 +233,7 @@ Do datasheet do MAX98357A:
 - **4 Ω @ 5 V**: 3.2 W (10% THD) ou 2.5 W (1% THD)
 - **8 Ω @ 3.7 V (LiPo)**: 0.93 W (10% THD)
 
-Para um robô bípede pequeno:
+Para um robô conversacional de bolso:
 - 0.93 W a 1.4 W é volume suficiente para TTS indoor a ~1 m de distância
 - 8 Ω reduz a corrente de pico vs 4 Ω (2.8 A limit no chip) — mais seguro
 - 8 Ω é o impedance mais comum em speakers de 40–50 mm
@@ -246,7 +246,7 @@ Para um robô bípede pequeno:
 |:---|:---|
 | Impedância | 8 Ω |
 | Potência nominal | 3 W (suporta os picos do MAX98357A) |
-| Diâmetro | 40–50 mm (cabe no chassi do bípede) |
+| Diâmetro | 40–50 mm (cabe no corpo do robô) |
 | Sensibilidade | > 85 dB @ 1 W / 1 m (eficiência razoável) |
 | Faixa de frequência | 300 Hz – 7 kHz mínimo (suficiente para voz TTS) |
 
