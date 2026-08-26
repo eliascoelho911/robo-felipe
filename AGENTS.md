@@ -30,7 +30,7 @@ branch `tamagotchi` (a variante atual, em desenvolvimento):
 
 | Branch | Variante | MCU | Status |
 |:---|:---|:---|:---|
-| `tamagotchi` | pet de bolso (sem servos/câmera) | ESP32-S3 + PSRAM | ativa |
+| `tamagotchi` | pet de bolso (sem servos, com câmera — ADR-017) | ESP32-S3 + PSRAM | ativa |
 | `quadrupede` | cão de 4 patas, chassi ESP-HI | ESP32-WROOM-32E-N4 | arquivada |
 | `main` | bípede ACEBOTT | ESP32-WROOM-32E-N4 | arquivada |
 

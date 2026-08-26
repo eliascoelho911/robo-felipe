@@ -14,11 +14,12 @@ ESP32-S3 com PSRAM — ver ADR-016).
 | Caminho | Conteúdo |
 |:---|:---|
 | [`audio/`](audio/) | BOM e esquema do subsistema de áudio (SPH0645LM4H + MAX98357A) — reusado da arquitetura anterior; pinout de referência para o WROOM-32E, remapeável para o ESP32-S3 |
-| [`cores3/`](cores3/) | Placeholder para material de referência da variante Tamagotchi/M5Stack CoreS3 (ADR-016) |
+| [`cores3/`](cores3/) | Capacidades do M5Stack CoreS3 para a variante Tamagotchi (ADR-016) — datasheets dos chips onboard mapeados às necessidades do pet |
 
 ## Referências cruzadas
 
 - ADRs que citam o subsistema de áudio: `docs/decisions/001`, `005`, `016`
 - BOM de áudio: [`audio/BOM-audio.md`](audio/BOM-audio.md)
 - Esquema de áudio: [`audio/esquema-audio.md`](audio/esquema-audio.md)
-- Variante Tamagotchi/CoreS3: [`cores3/`](cores3/) (placeholder — ADR-016)
+- Capacidades do CoreS3: [`cores3/CoreS3-capacidades.md`](cores3/CoreS3-capacidades.md)
+- Variante Tamagotchi/CoreS3: [`cores3/`](cores3/) (ADR-016)

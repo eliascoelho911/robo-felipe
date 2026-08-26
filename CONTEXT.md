@@ -2,7 +2,7 @@
 
 Robô conversacional de voz para o sobrinho de 8 anos do autor. Variante
 atual em desenvolvimento: o **Tamagotchi** — um pet de bolso, com display,
-microfone e alto-falante, autocontido (sem câmera, sem pernas, sem servos),
+microfone e alto-falante, autocontido (sem pernas, sem servos, com câmera — ver ADR-017),
 em **ESP32-S3 com PSRAM** (ver ADR-016), processando voz direto com a
 nuvem sem relay de smartphone.
 
@@ -28,9 +28,10 @@ _Avoid_: criança, usuário
 
 **Tamagotchi**:
 Variante de corpo atual — pet de bolso com display, microfone e
-alto-falante, sem câmera, sem pernas e sem servos. Autocontido: processa
+alto-falante e câmera, sem pernas e sem servos. Autocontido: processa
 voz direto com a nuvem (termina TLS no próprio ESP32-S3 com PSRAM), sem
-depender de um smartphone relay. Ver ADR-016.
+depender de um smartphone relay. Ver ADR-016; a câmera entrou no escopo
+via ADR-017.
 _Avoid_: o bichinho, o pet
 
 **Bípede**:
