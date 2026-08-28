@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamagotchi CoreS3 - Skin 3D Zoro (One Piece)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent-green: #34d399;
+      --zoro-green: #2e7d32;
+      --gold: #f59e0b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      max-width: 800px;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      font-size: 2.2rem;
+      margin: 0 0 8px 0;
+      background: linear-gradient(135deg, #4ade80, #10b981, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      max-width: 960px;
+      width: 100%;
+    }
+    .svg-wrapper {
+      background: #090d16;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.15);
+      width: 100%;
+      max-width: 880px;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 880px;
+    }
+    .spec-card {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .spec-card:hover {
+      transform: translateY(-2px);
+      border-color: #4ade80;
+    }
+    .spec-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #38bdf8;
+    }
+    .spec-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>⚔️ Tamagotchi CoreS3 &mdash; Skin Zoro 3D</h1>
+    <p>Conceito de case / corpo impresso em 3D (PLA) estilizado do Roronoa Zoro para o M5Stack CoreS3</p>
+  </div>
+
+  <div class="main-container">
+    <div class="svg-wrapper">
+      <svg viewBox="0 0 900 680" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Background Glows -->
+          <radialGradient id="deskGlow" cx="50%" cy="85%" r="60%">
+            <stop offset="0%" stop-color="#059669" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+          </radialGradient>
+
+          <!-- CoreS3 Bezel & Body -->
+          <linearGradient id="coreBezel" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1e293b"/>
+            <stop offset="100%" stop-color="#0f172a"/>
+          </linearGradient>
+
+          <linearGradient id="coreWhiteFrame" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#cbd5e1"/>
+          </linearGradient>
+
+          <!-- Screen IPS LCD -->
+          <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#022c22"/>
+            <stop offset="50%" stop-color="#064e3b"/>
+            <stop offset="100%" stop-color="#022c22"/>
+          </linearGradient>
+
+          <!-- Zoro Hair PLA Green -->
+          <linearGradient id="zoroHair" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#86efac"/>
+            <stop offset="30%" stop-color="#22c55e"/>
+            <stop offset="80%" stop-color="#15803d"/>
+            <stop offset="100%" stop-color="#14532d"/>
+          </linearGradient>
+
+          <!-- 3D Print Coat / Chassis Dark Green -->
+          <linearGradient id="zoroCoat" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#166534"/>
+            <stop offset="60%" stop-color="#14532d"/>
+            <stop offset="100%" stop-color="#052e16"/>
+          </linearGradient>
+
+          <!-- Haramaki Sash (Teal / Sage Green) -->
+          <linearGradient id="haramakiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#4ade80"/>
+            <stop offset="50%" stop-color="#86efac"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+
+          <!-- Gold Earrings & Accents -->
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fde047"/>
+            <stop offset="50%" stop-color="#eab308"/>
+            <stop offset="100%" stop-color="#ca8a04"/>
+          </linearGradient>
+
+          <!-- Katana Sheaths -->
+          <linearGradient id="wadoWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f8fafc"/>
+            <stop offset="100%" stop-color="#94a3b8"/>
+          </linearGradient>
+          <linearGradient id="kitetsuRed" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#dc2626"/>
+            <stop offset="100%" stop-color="#7f1d1d"/>
+          </linearGradient>
+          <linearGradient id="enmaPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#a855f7"/>
+            <stop offset="100%" stop-color="#581c87"/>
+          </linearGradient>
+
+          <!-- Drop Shadow Filters -->
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+          </filter>
+          <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#4ade80" flood-opacity="0.5"/>
+          </filter>
+        </defs>
+
+        <!-- Ambient Desk & Shadow -->
+        <ellipse cx="450" cy="560" rx="360" ry="80" fill="url(#deskGlow)" />
+        <ellipse cx="450" cy="545" rx="260" ry="40" fill="#000000" opacity="0.6" />
+
+        <!-- ==================== 3D PRINTED BASE & ROBOT BODY ==================== -->
+        <!-- Chibi Body / Robô Base -->
+        <g id="body-base" filter="url(#shadow)">
+          <!-- Base Stand Plinth (Pés/Base da mesa) -->
+          <rect x="330" y="470" width="240" height="60" rx="16" fill="url(#zoroCoat)" stroke="#16a34a" stroke-width="2"/>
+          <rect x="350" y="515" width="200" height="20" rx="8" fill="#052e16"/>
+          
+          <!-- Botas/Pés Chibi -->
+          <rect x="355" y="505" width="60" height="30" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+          <rect x="485" y="505" width="60" height="30" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+
+          <!-- Faixa Haramaki (Verde claro texturizado) -->
+          <rect x="315" y="435" width="270" height="42" rx="10" fill="url(#haramakiGrad)" stroke="#15803d" stroke-width="2"/>
+          <!-- Linhas de dobra do Haramaki -->
+          <line x1="325" y1="448" x2="575" y2="448" stroke="#16a34a" stroke-width="2" stroke-dasharray="8,6"/>
+          <line x1="325" y1="462" x2="575" y2="462" stroke="#16a34a" stroke-width="2" stroke-dasharray="8,6"/>
+
+          <!-- Braços Chibi (Lado Esquerdo e Direito) -->
+          <!-- Braço Esquerdo (com ombreira de sobretudo) -->
+          <path d="M 270 330 C 250 360 250 420 285 450 C 295 460 315 455 315 440 C 315 410 295 365 295 335 Z" fill="url(#zoroCoat)" stroke="#15803d" stroke-width="2"/>
+          <!-- Braço Direito segurando suporte lateral -->
+          <path d="M 630 330 C 650 360 650 420 615 450 C 605 460 585 455 585 440 C 585 410 605 365 605 335 Z" fill="url(#zoroCoat)" stroke="#15803d" stroke-width="2"/>
+        </g>
+
+        <!-- ==================== 3 KATANAS (BAINHAS DE ENCAIXE) ==================== -->
+        <g id="katanas" transform="translate(190, 310) rotate(-22)" filter="url(#shadow)">
+          <!-- Suporte / Clip 3D das espadas -->
+          <rect x="30" y="80" width="30" height="60" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+          <!-- 1. Enma (Roxa) -->
+          <g transform="translate(0, 0)">
+            <rect x="35" y="-30" width="14" height="220" rx="6" fill="url(#enmaPurple)" stroke="#3b0764" stroke-width="1.5"/>
+            <!-- Tsuba (Guarda da espada em trevo dourada) -->
+            <ellipse cx="42" cy="-30" rx="16" ry="8" fill="url(#goldGrad)" stroke="#713f12" stroke-width="1.5"/>
+            <!-- Cabo (Tsuka) -->
+            <rect x="37" y="-75" width="10" height="45" rx="3" fill="#581c87" stroke="#3b0764" stroke-width="1.5"/>
+            <!-- Detalhes dourados na bainha -->
+            <circle cx="42" cy="15" r="4" fill="url(#goldGrad)"/>
+            <circle cx="42" cy="55" r="4" fill="url(#goldGrad)"/>
+          </g>
+
+          <!-- 2. Sandai Kitetsu (Vermelha) -->
+          <g transform="translate(16, 10)">
+            <rect x="35" y="-30" width="14" height="210" rx="6" fill="url(#kitetsuRed)" stroke="#450a0a" stroke-width="1.5"/>
+            <ellipse cx="42" cy="-30" rx="15" ry="7" fill="url(#goldGrad)" stroke="#713f12" stroke-width="1.5"/>
+            <rect x="37" y="-75" width="10" height="45" rx="3" fill="#7f1d1d" stroke="#450a0a" stroke-width="1.5"/>
+            <line x1="36" y1="20" x2="48" y2="20" stroke="#000" stroke-width="3"/>
+            <line x1="36" y1="60" x2="48" y2="60" stroke="#000" stroke-width="3"/>
+          </g>
+
+          <!-- 3. Wado Ichimonji (Branca) -->
+          <g transform="translate(32, 20)">
+            <rect x="35" y="-30" width="14" height="200" rx="6" fill="url(#wadoWhite)" stroke="#64748b" stroke-width="1.5"/>
+            <ellipse cx="42" cy="-30" rx="14" ry="7" fill="url(#goldGrad)" stroke="#713f12" stroke-width="1.5"/>
+            <rect x="37" y="-75" width="10" height="45" rx="3" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+          </g>
+        </g>
+
+        <!-- ==================== CORE S3 DEVICE & CASE HOUSING ==================== -->
+        <g id="core-s3-unit" filter="url(#shadow)">
+          <!-- Case 3D Traseiro / Suporte Envolvente Verde Escuro -->
+          <rect x="270" y="150" width="360" height="310" rx="36" fill="url(#zoroCoat)" stroke="#22c55e" stroke-width="3"/>
+
+          <!-- M5Stack CoreS3 Moldura Branca Original Externa -->
+          <rect x="285" y="165" width="330" height="280" rx="26" fill="url(#coreWhiteFrame)" stroke="#94a3b8" stroke-width="2"/>
+          
+          <!-- M5Stack Bezel Frontal Preto de Vidro -->
+          <rect x="302" y="180" width="296" height="250" rx="18" fill="url(#coreBezel)" stroke="#0f172a" stroke-width="2"/>
+
+          <!-- Câmera GC0308 no topo central do Bezel -->
+          <circle cx="450" cy="195" r="7" fill="#090d16" stroke="#475569" stroke-width="1.5"/>
+          <circle cx="450" cy="195" r="3" fill="#1e40af"/>
+          <circle cx="451" cy="194" r="1" fill="#93c5fd"/>
+          <!-- Microfones I2S L/R no Bezel -->
+          <circle cx="340" cy="195" r="2.5" fill="#334155"/>
+          <circle cx="560" cy="195" r="2.5" fill="#334155"/>
+
+          <!-- Tela LCD IPS 2.0" (320x240 px) -->
+          <rect x="320" y="212" width="260" height="190" rx="8" fill="url(#screenGrad)" stroke="#065f46" stroke-width="1.5"/>
+
+          <!-- ==================== DISPLAY CONTENT: ZORO EXPRESSIONS ==================== -->
+          <!-- Fundo Pixel Art / Grid sutil da tela -->
+          <g opacity="0.15">
+            <line x1="320" y1="250" x2="580" y2="250" stroke="#34d399" stroke-width="1"/>
+            <line x1="320" y1="300" x2="580" y2="300" stroke="#34d399" stroke-width="1"/>
+            <line x1="320" y1="350" x2="580" y2="350" stroke="#34d399" stroke-width="1"/>
+            <line x1="385" y1="212" x2="385" y2="402" stroke="#34d399" stroke-width="1"/>
+            <line x1="450" y1="212" x2="450" y2="402" stroke="#34d399" stroke-width="1"/>
+            <line x1="515" y1="212" x2="515" y2="402" stroke="#34d399" stroke-width="1"/>
+          </g>
+
+          <!-- Status Bar Topo da Tela -->
+          <text x="330" y="228" font-family="monospace" font-size="11" font-weight="bold" fill="#34d399">HP: 100% ⚔️</text>
+          <text x="510" y="228" font-family="monospace" font-size="11" font-weight="bold" fill="#fbbf24">BAT 98% ⚡</text>
+
+          <!-- Olho Direito do Zoro (Aberto, afiado, determinado) -->
+          <g transform="translate(355, 275)">
+            <!-- Sobrancelha Esquerda (do observador) arqueada e brava -->
+            <path d="M 0 10 Q 30 -12 65 0" stroke="#14532d" stroke-width="7" stroke-linecap="round"/>
+            <!-- Contorno do olho -->
+            <path d="M 5 22 Q 35 12 60 22 Q 35 38 5 22 Z" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
+            <!-- Íris e Pupila -->
+            <circle cx="36" cy="23" r="8" fill="#15803d"/>
+            <circle cx="36" cy="23" r="4" fill="#052e16"/>
+            <!-- Brilho anime -->
+            <circle cx="38" cy="20" r="2.5" fill="#ffffff"/>
+          </g>
+
+          <!-- Olho Esquerdo do Zoro (Fechado com a icônica cicatriz vertical) -->
+          <g transform="translate(480, 275)">
+            <!-- Sobrancelha Direita arqueada -->
+            <path d="M 0 0 Q 35 -12 65 10" stroke="#14532d" stroke-width="7" stroke-linecap="round"/>
+            <!-- Olho fechado em linha séria -->
+            <path d="M 5 24 Q 35 28 60 20" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <!-- A Cicatriz Vertical (Scar) que atravessa a sobrancelha e o olho -->
+            <path d="M 32 -18 L 30 15 L 34 50" stroke="#991b1b" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- Pequenos traços de pontos da sutura -->
+            <line x1="27" y1="-2" x2="35" y2="2" stroke="#7f1d1d" stroke-width="2"/>
+            <line x1="28" y1="12" x2="36" y2="16" stroke="#7f1d1d" stroke-width="2"/>
+            <line x1="29" y1="32" x2="37" y2="36" stroke="#7f1d1d" stroke-width="2"/>
+          </g>
+
+          <!-- Expressão da Boca / Dentes determinadas ou biquinho Tamagotchi -->
+          <g transform="translate(450, 350)">
+            <path d="M -25 -5 Q 0 8 25 -5" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <!-- Bandana / Palito ou dente determinado -->
+            <line x1="-12" y1="-3" x2="-8" y2="4" stroke="#0f172a" stroke-width="2"/>
+            <line x1="8" y1="-3" x2="12" y2="4" stroke="#0f172a" stroke-width="2"/>
+          </g>
+
+          <!-- Botão Touch Central Inferior do CoreS3 (Círculo Vermelho característico) -->
+          <g transform="translate(450, 416)">
+            <!-- Setas touch laterais -->
+            <path d="M -60 0 L -50 -6 L -50 6 Z" fill="#e11d48" opacity="0.8"/>
+            <path d="M -35 0 L -25 -6 L -25 6 Z" fill="#e11d48" opacity="0.8"/>
+            <circle cx="0" cy="0" r="9" fill="none" stroke="#e11d48" stroke-width="2.5" filter="url(#glowGreen)"/>
+            <path d="M 35 0 L 25 -6 L 25 6 Z" fill="#e11d48" opacity="0.8"/>
+            <path d="M 60 0 L 50 -6 L 50 6 Z" fill="#e11d48" opacity="0.8"/>
+          </g>
+        </g>
+
+        <!-- ==================== 3D PRINTED TOP: ZORO SPIKY HAIR CAP ==================== -->
+        <!-- Peça de Cabelo estilo "Marimo" que encaixa em cima do CoreS3 -->
+        <g id="zoro-hair-piece" filter="url(#shadow)">
+          <!-- Camada Traseira de Spikes de Cabelo -->
+          <path d="
+            M 270 170 
+            L 260 130 L 290 145 
+            L 295 90  L 330 120 
+            L 345 60  L 385 105 
+            L 410 40  L 445 95 
+            L 480 35  L 510 95 
+            L 545 55  L 575 110 
+            L 600 85  L 625 135 
+            L 645 125 L 630 170 
+            Z" 
+            fill="#14532d" stroke="#052e16" stroke-width="2"/>
+
+          <!-- Camada Principal Frontal de Cabelo Verde Vibrante (PLA Spikes) -->
+          <path d="
+            M 280 165 
+            L 275 140 L 305 150 
+            L 315 105 L 350 135 
+            L 370 75  L 405 120 
+            L 435 55  L 465 110 
+            L 500 50  L 525 110 
+            L 560 70  L 585 125 
+            L 615 100 L 620 150 
+            L 625 165 
+            C 550 155 350 155 280 165 
+            Z" 
+            fill="url(#zoroHair)" stroke="#15803d" stroke-width="2.5"/>
+
+          <!-- Detalhes de mechas em camadas 3D (Layer lines de PLA) -->
+          <path d="M 340 130 L 360 95 L 380 130" stroke="#86efac" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M 420 110 L 440 70 L 455 115" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M 490 105 L 505 65 L 520 110" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M 550 120 L 570 85 L 585 125" stroke="#86efac" stroke-width="2" stroke-linecap="round" fill="none"/>
+        </g>
+
+        <!-- ==================== 3 GOLDEN HOOP EARRINGS (ORELHA ESQUERDA) ==================== -->
+        <!-- Brincos na Lateral Esquerda da Moldura 3D (Direita do Core S3 visto de frente) -->
+        <g id="earrings" transform="translate(635, 230)" filter="url(#shadow)">
+          <!-- Suporte de Orelha 3D impresso -->
+          <path d="M -5 0 C 15 5 20 25 10 40 C 5 45 -5 45 -5 40 Z" fill="url(#zoroCoat)" stroke="#15803d" stroke-width="1.5"/>
+          
+          <!-- Brinco 1 -->
+          <g transform="translate(8, 12)">
+            <ellipse cx="0" cy="18" rx="4" ry="16" fill="none" stroke="url(#goldGrad)" stroke-width="3" filter="url(#glowGreen)"/>
+            <circle cx="0" cy="34" r="2.5" fill="#fef08a"/>
+          </g>
+
+          <!-- Brinco 2 -->
+          <g transform="translate(16, 17)">
+            <ellipse cx="0" cy="18" rx="4" ry="16" fill="none" stroke="url(#goldGrad)" stroke-width="3" filter="url(#glowGreen)"/>
+            <circle cx="0" cy="34" r="2.5" fill="#fef08a"/>
+          </g>
+
+          <!-- Brinco 3 -->
+          <g transform="translate(24, 22)">
+            <ellipse cx="0" cy="18" rx="4" ry="16" fill="none" stroke="url(#goldGrad)" stroke-width="3" filter="url(#glowGreen)"/>
+            <circle cx="0" cy="34" r="2.5" fill="#fef08a"/>
+          </g>
+        </g>
+
+        <!-- ==================== ANOTAÇÕES E LABELS TÉCNICOS ==================== -->
+        <g id="callouts" opacity="0.9">
+          <!-- Callout 1: Cabelo Top Snap-on -->
+          <g transform="translate(100, 75)">
+            <rect x="0" y="0" width="165" height="36" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+            <text x="12" y="22" font-size="12" font-weight="bold" fill="#f8fafc">🌱 Spiky Hair Top Cap</text>
+            <path d="M 165 18 L 295 100" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <circle cx="295" cy="100" r="3" fill="#34d399"/>
+          </g>
+
+          <!-- Callout 2: Câmera GC0308 -->
+          <g transform="translate(680, 110)">
+            <rect x="0" y="0" width="160" height="36" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="12" y="22" font-size="12" font-weight="bold" fill="#f8fafc">📷 Câmera GC0308</text>
+            <path d="M 0 18 L -220 85" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <circle cx="460" cy="195" r="3" fill="#38bdf8"/>
+          </g>
+
+          <!-- Callout 3: 3 Brincos Dourados -->
+          <g transform="translate(710, 260)">
+            <rect x="0" y="0" width="160" height="36" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="12" y="22" font-size="12" font-weight="bold" fill="#f8fafc">✨ 3 Brincos Dourados</text>
+            <path d="M 0 18 L -50 0" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <circle cx="660" cy="260" r="3" fill="#f59e0b"/>
+          </g>
+
+          <!-- Callout 4: 3 Bainhas Santoryu -->
+          <g transform="translate(50, 480)">
+            <rect x="0" y="0" width="175" height="36" rx="8" fill="#1e293b" stroke="#ec4899" stroke-width="1.5"/>
+            <text x="12" y="22" font-size="12" font-weight="bold" fill="#f8fafc">⚔️ Suporte 3 Espadas</text>
+            <path d="M 175 18 L 225 -60" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <circle cx="225" cy="420" r="3" fill="#ec4899"/>
+          </g>
+
+          <!-- Callout 5: Haramaki / Base Stand -->
+          <g transform="translate(670, 460)">
+            <rect x="0" y="0" width="180" height="36" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+            <text x="12" y="22" font-size="12" font-weight="bold" fill="#f8fafc">🥋 Base Stand Haramaki</text>
+            <path d="M 0 18 L -90 -5" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <circle cx="580" cy="455" r="3" fill="#10b981"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="specs-grid">
+      <div class="spec-card">
+        <h3>🧩 Encaixe Modular (Snap-fit)</h3>
+        <p>O case 3D divide-se em 3 partes: a base/corpo (com a faixa <em>haramaki</em>), o bezel de proteção frontal e o topo com o cabelo espetado verde.</p>
+      </div>
+      <div class="spec-card">
+        <h3>⚔️ Holster Santoryu (3 Espadas)</h3>
+        <p>Suporte lateral direito em ângulo para abrigar miniaturas das katanas (Wado Ichimonji, Sandai Kitetsu e Enma) que também funcionam como caneta stylus ou apoio.</p>
+      </div>
+      <div class="spec-card">
+        <h3>👀 Expressões na Tela LCD</h3>
+        <p>Firmware renderiza os olhos determinados de Zoro, piscando o olho direito e mantendo a cicatriz característica sobre o olho esquerdo fechado.</p>
+      </div>
+      <div class="spec-card">
+        <h3>🔌 Acesso a Portas &amp; Sensores</h3>
+        <p>Aberturas dedicadas para a câmera GC0308, microfones I2S duplos frontais, alto-falante MAX98357A traseiro e porta USB-C inferior/lateral para recarga.</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

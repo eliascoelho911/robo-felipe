@@ -67,6 +67,35 @@ Espressif, em ESP32-S3. Inspira o protocolo e a UX conversacional do
 Tamagotchi.
 _Avoid_: xiaozhi, o firmware de referência
 
+**Plataforma**:
+O host onde o Tamagotchi encarna — hoje o app Android de laboratório,
+depois o CoreS3. Detecta Triggers, envia Batches ao Core e executa
+Planos de Ações.
+_Avoid_: device, cliente, app (sozinho)
+
+**Trigger**:
+Evento detectado pela Plataforma, com timestamp e payload. Iniciais:
+`voz` (áudio após a hot key), `sacudida`, `toque de botão`.
+_Avoid_: evento, input, comando
+
+**Batch**:
+Envelope versionado com um ou mais Triggers enviado ao Core.
+_Avoid_: pacote, mensagem, request
+
+**Core**:
+Subsistema nosso, auto-hospedado em TypeScript, que processa Batches e
+responde com Planos de Ações. Pode chamar a Nuvem. Ver ADR-018.
+_Avoid_: core embarcado, firmware core, backend, cérebro
+
+**Ação**:
+Efeito que a Plataforma sabe executar — `falar`, `dançar`,
+`expressar emoção`, `ficar tonto`, entre outras.
+_Avoid_: comando, output
+
+**Plano de Ações**:
+Resposta do Core — lista ordenada de uma ou mais Ações.
+_Avoid_: output, resposta, resultado
+
 **ESP-HI**:
 Design de referência (makerworld + oshwhub) de cão robô baixo-custo em
 ESP32-C3. Forneceu o modelo 3D do chassi e o gait do quadrúpede
