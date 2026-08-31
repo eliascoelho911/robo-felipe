@@ -1,0 +1,25 @@
+{
+  "name": "@robo-felipe/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Contrato canônico Batch ↔ Plano de Ações, compartilhado entre Core (TS) e Plataforma (Android via JSON Schema).",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "gen": "tsx src/gen.ts",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "tsx": "4.20.0",
+    "vitest": "4.1.11"
+  }
+}

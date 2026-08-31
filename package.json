@@ -1,0 +1,21 @@
+{
+  "name": "robo-felipe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Robô Felipe — robô conversacional de voz pt-BR, variante Tamagotchi. Raiz do monorepo; comportamento mora no Core TS, Plataformas (Android/CoreS3) detectam Triggers e executam Planos de Ações.",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.11",
+    "@types/node": "22.10.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

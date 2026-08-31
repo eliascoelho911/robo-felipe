@@ -1,0 +1,29 @@
+# Override do docker-compose da Nuvem (xiaozhi-esp32-server).
+#
+# Usar com o base do upstream:
+#   docker compose -f upstream/main/xiaozhi-server/docker-compose.yml \
+#                  -f docker-compose.override.yml up -d
+#
+# (O Justfile já encapsula isso na recipe `esp32-server-up`.)
+#
+# O que este override faz:
+#  1. Monta `config/config.yaml` como `data/.config.yaml` (somente leitura)
+#     dentro do contêiner — o servidor lê este arquivo antes do config.yaml
+#     do upstream, aplicando a configuração pt-BR do Robô Felipe.
+#  2. Ajusta o fuso para America/Sao_Paulo (pt-BR).
+#  3. Mapeia host.docker.internal para o host, permitindo que o contêiner
+#     alcance o Core (Hono) rodando no host em :3000/mcp (ver mcp_endpoint
+#     em config/config.yaml).
+#
+# OBS: o base ainda monta `./models/SenseVoiceSmall/model.pt` (necessário só
+# para FunASR local). Como usamos GroqASR (nuvem), esse mount não afeta o
+# funcionamento; se o path local não existir, o Docker cria um diretório vazio.
+
+services:
+  xiaozhi-esp32-server:
+    environment:
+      - TZ=America/Sao_Paulo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./config/config.yaml:/opt/xiaozhi-esp32-server/data/.config.yaml:ro

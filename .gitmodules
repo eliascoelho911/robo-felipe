@@ -1,0 +1,6 @@
+[submodule "esp32-server/upstream"]
+	path = esp32-server/upstream
+	url = https://github.com/eliascoelho911/xiaozhi-esp32-server.git
+[submodule "firmware"]
+	path = firmware
+	url = https://github.com/eliascoelho911/xiaozhi-esp32.git

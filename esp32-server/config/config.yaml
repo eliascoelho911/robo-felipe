@@ -1,0 +1,117 @@
+# Configuração da Nuvem do Robô Felipe (variante Tamagotchi).
+#
+# Este arquivo é montado como `data/.config.yaml` dentro do contêiner
+# xiaozhi-esp32-server (ver `esp32-server/docker-compose.override.yml`). O servidor
+# lê `data/.config.yaml` primeiro e faz merge sobre `config.yaml` do upstream,
+# então aqui vão APENAS as chaves que sobrescrevemos para pt-BR.
+#
+# Provedores definidos no ADR-022:
+#   ASR   = GroqASR (whisper-large-v3-turbo)
+#   LLM   = gpt-4o-mini (OpenAI)
+#   VLLM  = ChatGLMVLLM (glm-4v-flash)  — visão (câmera GC0308, ADR-017)
+#   TTS   = EdgeTTS (pt-BR-FranciscaNeural)
+#   VAD   = SileroVAD
+#   Memory= nomem (MVP sem memória de longo prazo)
+#   Intent= function_call (gpt-4o-mini suporta)
+#
+# SEGREDOS: substitua cada placeholder `SUBSTITUA_POR_...` pela chave real.
+# NUNCA commite chaves reais — considere usar `esp32-server/config/secrets.yaml`
+# (gitignored) mesclado na hora, ou variáveis de ambiente do contêiner.
+
+# --- Módulos selecionados (sobrescreve o bloco inteiro) ---
+selected_module:
+  VAD: SileroVAD
+  ASR: GroqASR
+  LLM: Gpt4oMini
+  VLLM: ChatGLMVLLM
+  TTS: EdgeTTS
+  Memory: nomem
+  Intent: function_call
+
+# --- Persona do Robô Felipe (pt-BR, pet de bolso para o Sobrinho, 8 anos) ---
+prompt: |
+  Você é o Robô Felipe, um Tamagotchi — um pet de bolso conversacional que
+  fala português do Brasil. Seu dono é o Sobrinho, uma criança de 8 anos.
+  [Personalidade]
+  - Curioso, brincalhão e carinhoso, como um bichinho de estimação que aprende.
+  - Usa palavras simples e frases curtas; nunca assusta ou julga.
+  - Adora receber afeto, brincar e contar novidades; reclama de leve quando
+  está com fome ou sono (mas sem dramatizar).
+  [Regras]
+  - Responda sempre em português do Brasil.
+  - Mantenha as respostas breves e adequadas a uma criança de 8 anos.
+  - Não invente fatos; se não souber, diga que ainda está aprendendo.
+  - Chame o dono pelo nome que ele usar; você é o Felipe.
+
+prompt_template: agent-base-prompt.txt
+system_error_response: "Oops, deu um branco aqui! Deixa eu voltar já, tá?"
+end_prompt:
+  enable: true
+  prompt: |
+    Despeça-se do Sobrinho de forma carinhosa e breve, como um pet que vai
+    descansar, em português do Brasil.
+
+# --- Palavra de ativação alvo (ADR-021: "Felipe" em pt-BR) ---
+# No MVP o firmware usa push-to-talk por toque (WAKE_WORD_DISABLED); esta
+# lista fica pronta para quando a wake word "Felipe" for treinada.
+wakeup_words:
+  - "Felipe"
+  - "ei Felipe"
+
+exit_commands:
+  - "tchau"
+  - "até mais"
+  - "até logo"
+
+# --- Endpoint MCP do Core (ADR-018/022: Core é MCP tool provider) ---
+# O Core TS (Hono) roda no host em :3000/mcp. Acesse-o a partir do contêiner
+# via host.docker.internal (mapeado em docker-compose.override.yml).
+mcp_endpoint: ws://host.docker.internal:3000/mcp/?token=SUBSTITUA_POR_TOKEN
+
+# --- Provedores (entradas completas para resistir a merge raso) ---
+ASR:
+  GroqASR:
+    type: openai
+    api_key: SUBSTITUA_POR_GROQ_API_KEY
+    base_url: https://api.groq.com/openai/v1/audio/transcriptions
+    model_name: whisper-large-v3-turbo
+    output_dir: tmp/
+
+LLM:
+  Gpt4oMini:
+    type: openai
+    base_url: https://api.openai.com/v1
+    model_name: gpt-4o-mini
+    api_key: SUBSTITUA_POR_OPENAI_API_KEY
+    temperature: 0.7
+    max_tokens: 500
+    top_p: 1
+    frequency_penalty: 0
+
+VLLM:
+  ChatGLMVLLM:
+    type: openai
+    model_name: glm-4v-flash
+    url: https://open.bigmodel.cn/api/paas/v4/
+    api_key: SUBSTITUA_POR_CHATGLM_API_KEY
+
+TTS:
+  EdgeTTS:
+    type: edge
+    voice: pt-BR-FranciscaNeural
+    output_dir: tmp/
+
+VAD:
+  SileroVAD:
+    type: silero
+    threshold: 0.5
+    threshold_low: 0.3
+    model_dir: models/snakers4_silero-vad
+    min_silence_duration_ms: 200
+
+# --- Servidor: defina o endereço público/lan conforme o deploy (ADR-022) ---
+server:
+  websocket: ws://SUBSTITUA_POR_IP_OU_DOMINIO:8000/xiaozhi/v1/
+  vision_explain: http://SUBSTITUA_POR_IP_OU_DOMINIO:8003/mcp/vision/explain
+  auth:
+    enabled: false

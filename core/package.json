@@ -1,0 +1,35 @@
+{
+  "name": "@robo-felipe/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Core do Robô Felipe — serviço TypeScript (Hono + MCP) que processa Batches e responde com Planos de Ações. Estado canônico do pet (cloud-primary, ADR-023).",
+  "exports": {
+    ".": {
+      "types": "./src/app.ts",
+      "import": "./dist/app.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "1.14.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@robo-felipe/contract": "workspace:*",
+    "better-sqlite3": "13.0.3",
+    "hono": "4.13.5",
+    "xstate": "5.32.6",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "22.10.0",
+    "tsx": "4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

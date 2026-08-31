@@ -1,0 +1,8 @@
+{
+  "type": "robo-felipe-tamagotchi",
+  "version": "0.1.0",
+  "host": "github.com",
+  "port": 443,
+  "bin": "/eliascoelho911/robo-felipe/releases/download/v0.1.0/firmware.img",
+  "littlefs": "/eliascoelho911/robo-felipe/releases/download/v0.1.0/filesystem.img"
+}

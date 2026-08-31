@@ -15,14 +15,17 @@
 .piolibdeps/
 platformio.ini
 
-# ---------- Chaves de assinatura OTA (ADR-007) ----------
+# ---------- Chaves e imagens OTA (ADR-007 e ADR-020) ----------
 # Chave privada RSA NUNCA entra no repo — fica em CI secret / máquina do dev.
+# ADR-020: esp32FOTA, RSA-4096, manifest no GitHub Releases, app + LittleFS.
 priv_key.pem
 *.private.pem
 private_key*.pem
 *.sign
-# Imagem assinada é artefato de release, não de source.
-fw.img
+# Imagens assinadas (*.img) e binários crus (*.bin) são artefatos de release,
+# não de source. ADR-020: firmware.img / filesystem.img = cat <name>.sign <name>.bin.
+# (A chave pública rsa_key.pub É versionada em ota/keys/.)
+*.img
 
 # ---------- C / C++ ----------
 *.o
@@ -63,6 +66,31 @@ android/.idea/
 android/captures/
 android/.cxx/
 android/.externalNativeBuild/
+
+# ---------- Node.js / TypeScript (Core + contract, ADR-018/023) ----------
+# Dependências
+node_modules/
+# Saídas de build do TS (tsc outDir)
+dist/
+# Banco SQLite do Core — estado cloud-primary do pet (ADR-023)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+# Variáveis de ambiente do Core (CORE_PORT, segredos etc.)
+core/.env
+# JSON Schemas gerados a partir do Zod (canônico em packages/contract/src).
+# `just contract-gen` regenera; não edite nem commite.
+packages/contract/schemas/
+# Cache do pnpm
+.pnpm-store/
+
+# ---------- Nuvem (xiaozhi-esp32-server, ADR-022) ----------
+# Segredos ficam fora do repo (separados do config.yaml de placeholders).
+esp32-server/config/secrets.yaml
+esp32-server/config/secrets.yml
+# esp32-server/upstream/ é submodule (tracked via .gitmodules); runtime do servidor
+# (data/, modelos) é ignorado pelo .gitignore do próprio submodule.
 
 # ---------- IDEs e editores ----------
 # VS Code: mantemos .vscode/ (arduino.json, c_cpp_properties.json) versionado,
