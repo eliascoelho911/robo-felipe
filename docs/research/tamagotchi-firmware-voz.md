@@ -150,8 +150,20 @@ como firmware.
 
 ### `kahrendt/microWakeWord` — wake word open-source, independente de idioma
 
-- **URL**: https://github.com/kahrendt/microWakeWord · ~9★ ·
-  **Licença**: Apache-2.0 · governado pela **Open Home Foundation**.
+- **URL**: https://github.com/kahrendt/microWakeWord · 10★ ·
+  **Licença**: Apache-2.0 · governado pela **Open Home Foundation**
+  (fork de `OHF-Voice/micro-wake-word`).
+- **Modelos prontos (verificado em 2026-08-31)**: o "model zoo" oficial
+  — `esphome/micro-wake-word-models` (121★, Apache-2.0) — entrega
+  **apenas wake words em inglês**: v1 `alexa`/`hey_jarvis`/`okay_nabu`;
+  v2 +`hey_mycroft`/`vad`; `v2/experiments` (não suportados, "use por
+  sua conta e risco") `choo_choo_homie`/`hey_home_assistant`/
+  `hey_peppa_pig`/`okay_computer`. **Nenhum modelo em pt-BR / "Felipe"
+  existe off-the-shelf** — `microWakeWord` é um *framework de treino*
+  (early release, "advanced users"), não um repositório de modelos.
+  Amostras positivas são geradas via `rhasspy/piper-sample-generator`
+  (Piper tem voz pt-BR `pt_BR-cadu` — ver research selfhosted), logo a
+  **única rota é treinar** um modelo "Felipe" com Piper pt-BR.
 - **Como funciona**: áudio mono 16 kHz → espectrograma 40 features/10
   ms (preprocessor do `micro_speech` c/ NS + AGC) → modelo streaming
   MixConv INT8 → .tflite. **Treinamento por amostras sintéticas** (TTS)
@@ -369,7 +381,8 @@ MIT, M5Stack CoreS3 pronto. Tudo o mais é fragmento.
 | `xinnan-tech/xiaozhi-esp32-server` | https://github.com/xinnan-tech/xiaozhi-esp32-server | MIT | 2026-08-26 |
 | `espressif/esp-sr` | https://github.com/espressif/esp-sr | ESPRESSIF MIT | 2026-08-26 |
 | `espressif/esp-skainet` | https://github.com/espressif/esp-skainet | ESPRESSIF MIT | 2026-08-26 |
-| `kahrendt/microWakeWord` | https://github.com/kahrendt/microWakeWord | Apache-2.0 | 2026-08-26 |
+| `kahrendt/microWakeWord` | https://github.com/kahrendt/microWakeWord | Apache-2.0 | 2026-08-31 |
+| `esphome/micro-wake-word-models` (model zoo) | https://github.com/esphome/micro-wake-word-models | Apache-2.0 | 2026-08-31 |
 | `temm1e-labs/xiaozhi-tflite` | https://github.com/temm1e-labs/xiaozhi-tflite | NOASSERTION | 2026-08-26 |
 | `Picovoice/porcupine` | https://github.com/Picovoice/porcupine | Proprietário (binding Apache) | 2026-08-26 |
 | `espressif/esp-tflite-micro` | https://github.com/espressif/esp-tflite-micro | Apache-2.0 | 2026-08-26 |
