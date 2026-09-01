@@ -31,16 +31,16 @@ ActionGrid), `NavigationKeys` (Nav3 órfão). **Adicionar** permissão
 **Blocked by:** 03 (xiaozhi-server rodando para testar handshake WSS),
 04 (adapter Python com pet tools para o fluxo completo de voz).
 
-**Status:** ready-for-agent
+**Status:** review
 
-- [ ] `android/app/src/main/java/com/example/robofelipe/audio/` criado: `OpusEncoder`, `OpusDecoder`, `OpusStreamPlayer`, `EnhancedAudioManager` (portados/adaptados do xiaoniu).
-- [ ] `android/app/src/main/java/com/example/robofelipe/network/` criado: `WebSocketManager` (OkHttp WebSocket, handshake xiaozhi, envio/recepção de frames Opus binários + JSON textuais).
-- [ ] Permissão `RECORD_AUDIO` adicionada ao `AndroidManifest.xml` (com runtime request em Compose).
-- [ ] OkHttp + Gson adicionados a `libs.versions.toml` e `build.gradle.kts`.
-- [ ] Push-to-talk funcional: toque inicia captura → encode Opus → send WSS; toque para → `listen stop`.
-- [ ] TTS playback: Opus binário recebido → decode → stream ao speaker.
-- [ ] `RobotCommand`, `DataRepository`, `MainScreen` (DPad/ActionGrid), `NavigationKeys` removidos.
-- [ ] `MainActivity` atualizado para renderizar a nova tela de voz (placeholder — UI de pet vem no ticket 06).
-- [ ] `./gradlew test` passa (unit tests atualizados).
-- [ ] `./gradlew assembleDebug` builda sem erros.
-- [ ] Demoable: app conecta ao xiaozhi-server (WSS), push-to-talk envia áudio, LLM responde, TTS toca no speaker.
+- [x] `android/app/src/main/java/com/example/robofelipe/audio/` criado: `OpusEncoder`, `OpusDecoder`, `OpusStreamPlayer`, `EnhancedAudioManager` (portados/adaptados do xiaoniu).
+- [x] `android/app/src/main/java/com/example/robofelipe/network/` criado: `WebSocketManager` (OkHttp WebSocket, handshake xiaozhi, envio/recepção de frames Opus binários + JSON textuais).
+- [x] Permissão `RECORD_AUDIO` adicionada ao `AndroidManifest.xml` (com runtime request em Compose).
+- [x] OkHttp + Gson adicionados a `libs.versions.toml` e `build.gradle.kts`.
+- [x] Push-to-talk funcional: toque inicia captura → encode Opus → send WSS; toque para → `listen stop`.
+- [x] TTS playback: Opus binário recebido → decode → stream ao speaker.
+- [x] `RobotCommand`, `DataRepository`, `MainScreen` (DPad/ActionGrid), `NavigationKeys` removidos.
+- [x] `MainActivity` atualizado para renderizar a nova tela de voz (placeholder — UI de pet vem no ticket 06).
+- [x] `./gradlew test` passa (27 testes unitários).
+- [x] `./gradlew assembleDebug` builda sem erros (NDK arm64-v8a + x86_64, CMake, prefab opus).
+- [ ] Demoable: app conecta ao xiaozhi-server (WSS), push-to-talk envia áudio, LLM responde, TTS toca no speaker (requer hardware + xiaozhi-server rodando).

@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Robo Felipe</string>
+    <string name="server_url">Endereço do servidor</string>
+    <string name="connect">Conectar</string>
+    <string name="connection_status">Conexão</string>
+    <string name="capture_status">Estado</string>
+    <string name="disconnected">Desconectado</string>
+    <string name="connecting">Conectando…</string>
+    <string name="connected">Conectado</string>
+    <string name="listening">Ouvindo…</string>
+    <string name="pet_speaking">Robô Felipe falando…</string>
+    <string name="idle">Parado</string>
+    <string name="press_to_talk">Falar</string>
+    <string name="release_to_stop">Soltar</string>
+    <string name="you_said">Você disse</string>
+    <string name="pet_replied">Robô Felipe respondeu</string>
 </resources>
