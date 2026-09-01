@@ -58,14 +58,19 @@ android-lint:
 # --- Nuvem (xiaozhi-esp32-server, Docker) ---
 
 # Sobe a Nuvem local (base do upstream + override de config pt-BR).
+# --project-directory esp32-server faz os paths relativos (./config, ./data,
+# ./models) resolverem contra esp32-server/, e não contra o dir do base do
+# upstream (ver cabeçalho do override para o porquê).
 # -f base primeiro, -f override depois: o override mescla sobre o base.
 esp32-server-up:
-    docker compose -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+    docker compose --project-directory esp32-server \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
                    -f esp32-server/docker-compose.override.yml up -d
 
 # Valida a config do compose (merge base+override) sem subir.
 esp32-server-check:
-    docker compose -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+    docker compose --project-directory esp32-server \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
                    -f esp32-server/docker-compose.override.yml config
 
 # --- Firmware (ESP-IDF, dentro de firmware/) ---

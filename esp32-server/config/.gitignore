@@ -1,0 +1,8 @@
+# Segredos da Nuvem — nunca commite chaves reais de API.
+# `config.yaml` (template com placeholders) é versionado; `.config.yaml`
+# é a cópia local com chaves reais, montada como data/.config.yaml pelo
+# override quando se roda com segredos de verdade (ver cabeçalho de
+# config.yaml e docker-compose.override.yml).
+.config.yaml
+secrets.yaml
+.env

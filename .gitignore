@@ -86,11 +86,16 @@ packages/contract/schemas/
 .pnpm-store/
 
 # ---------- Nuvem (xiaozhi-esp32-server, ADR-022) ----------
-# Segredos ficam fora do repo (separados do config.yaml de placeholders).
+# Segredos ficam fora do repo (separado do config.yaml de placeholders).
+# `esp32-server/config/.gitignore` cobre `.config.yaml`, `secrets.yaml`, `.env`.
 esp32-server/config/secrets.yaml
 esp32-server/config/secrets.yml
-# esp32-server/upstream/ é submodule (tracked via .gitmodules); runtime do servidor
-# (data/, modelos) é ignorado pelo .gitignore do próprio submodule.
+# esp32-server/upstream/ é submodule (tracked via .gitmodules).
+# Runtime do servidor (data/, modelos) roda em esp32-server/ quando se usa
+# `--project-directory esp32-server` (ver Justfile) — ignora volumes que o
+# compose cria no host.
+esp32-server/data/
+esp32-server/models/
 
 # ---------- IDEs e editores ----------
 # VS Code: mantemos .vscode/ (arduino.json, c_cpp_properties.json) versionado,
