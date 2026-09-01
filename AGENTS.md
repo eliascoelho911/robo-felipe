@@ -9,7 +9,7 @@ arquivo é o ponto de entrada; subsistemas com regras próprias têm
 Robô Felipe é um robô conversacional de voz em **português (pt-BR)**,
 variante **Tamagotchi** — um pet de bolso para o **Sobrinho** (8 anos),
 autocontido num M5Stack CoreS3 (ESP32-S3 com PSRAM), que fala direto com
-a nuvem sem relay de smartphone. Os ADRs 016–023 governam a variante
+a nuvem sem relay de smartphone. Os ADRs 016–024 governam a variante
 atual; as variantes bípede/quadrúpede anteriores estão arquivadas nos
 branches `main` e `quadrupede`.
 
@@ -80,6 +80,7 @@ ADR-023 (pet vivo), ADR-016 (sem relay).
 |:---|:---|:---|
 | `AGENTS.md` | este arquivo | ativo |
 | `CONTEXT.md` | glossário ubíquo | ativo, autoritativo |
+| `.github/` | CI (ci.yml), release OTA (release.yml), Dependabot | ativo (ADR-024) |
 | `android/` | **Plataforma atual** de testes do Core (Kotlin/Compose) | ativo (ADR-018) |
 | `core/` | **Core** TypeScript (Hono + SQLite) | ativo |
 | `packages/contract/` | schemas Zod do Batch e Plano de Ações → JSON Schema | ativo |
@@ -120,10 +121,11 @@ um ADR para refletir o estado atual** — eles registram a decisão da
   para o bípede/quadrúpede no WROOM-32E-N4 (sem PSRAM, com relay de
   smartphone). Referências a "WROOM", "`ACB_Biped_Robot`", "4 servos",
   "relay" são intencionais e corretas para a decisão histórica.
-- **ADRs 016–023 pertencem à variante Tamagotchi** neste branch: 016
+- **ADRs 016–024 pertencem à variante Tamagotchi** neste branch: 016
   (sem relay), 017 (câmera), 018 (Core + contrato), 019 (hardware
-  CoreS3), 020 (OTA), 021 (firmware xiaozhi), 022 (Nuvem), 023 (pet vivo).
-  ADRs 003, 004 e 008–015 existem no branch `quadrupede`.
+  CoreS3), 020 (OTA), 021 (firmware xiaozhi), 022 (Nuvem), 023 (pet
+  vivo), 024 (CI GitHub Actions). ADRs 003, 004 e 008–015 existem no
+  branch `quadrupede`.
 - Para criar um novo ADR, siga o formato dos existentes (Status / Date /
   Context / Decision / Alternatives Considered / Consequences / Notas).
 
@@ -217,6 +219,7 @@ diretos quando existir.
 | Build do firmware | `source esp-idf/export.sh && python3 scripts/build.py m5stack/cores3-felipe --name felipe` | `firmware/` |
 | Regenerar locales | `python3 scripts/gen_lang.py` | `firmware/` |
 | Nuvem (local) | `docker compose -f esp32-server/docker-compose.override.yml up` | raiz |
+| Validar manifest OTA | `just ota-manifest-check` | raiz |
 | Verificar links .md | `just check-docs` | raiz |
 
 Se um comando não existe ainda (firmware ESP-IDF não configurado neste
@@ -225,8 +228,11 @@ Reporte o que executou e o que ainda precisa de setup.
 
 ## Verificação por tipo de mudança
 
-Não há CI automatizado. A verificação é por inspeção e comandos locais.
-Após cada mudança, execute o que se aplica e **reporte o que verificou e
+A CI (ADR-024) roda em todo push/PR: jobs `ts`, `android`, `docker`,
+`docs` e `ota-manifest` em `.github/workflows/ci.yml`; releases OTA em
+tags via `.github/workflows/release.yml`. A CI não substitui a
+verificação local — rode os comandos abaixo antes de push. Após cada
+mudança, execute o que se aplica e **reporte o que verificou e
 o que ainda precisa de hardware/setup extra** — um build que passa não é
 validação de hardware.
 
@@ -244,6 +250,9 @@ validação de hardware.
   android (ambos consomem o schema).
 - **Mudou config da Nuvem**: `docker compose config` valida o override;
   não suba containers sem pedir.
+- **Mudou o manifest OTA** (`ota/manifest/`): `just ota-manifest-check`.
+  Release OTA: tag `vX.Y.Z` dispara o `release.yml` (exige o secret
+  `OTA_RSA_PRIVATE_KEY`).
 
 ## Regras de estilo para agentes
 
@@ -297,7 +306,9 @@ Declara `Blocked by` (tickets que devem completar antes) e
 `Status: ready-for-agent`. O template está na skill `/to-tickets`.
 
 Feature atual: `fase-1-core-android` (Core TS/Bun + xiaozhi-server +
-Android, 6 tickets). Fase 2 (CoreS3) inicia após o hardware chegar.
+Android, 6 tickets). Infra já especificada: spec 07 (CI GitHub Actions,
+ADR-024) e spec 08 (self-test pós-OTA — executa na Fase 2). Fase 2
+(CoreS3) inicia após o hardware chegar.
 
 ## `tutorial_raw/` é gitignored
 

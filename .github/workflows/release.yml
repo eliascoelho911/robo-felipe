@@ -1,0 +1,129 @@
+name: OTA Release
+
+# Pipeline de release OTA (ADR-020): build do firmware da variante
+# cores3-felipe no container ESP-IDF, assinatura RSA-4096 de app + assets,
+# publicação como assets de GitHub Release e atualização do manifest no
+# branch tamagotchi. Exige o secret OTA_RSA_PRIVATE_KEY (chave PEM RSA-4096).
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build + assina firmware (cores3-felipe)
+    runs-on: ubuntu-24.04
+    container:
+      image: espressif/idf:v6.0.2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init submódulo firmware
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init firmware
+
+      - name: Build firmware (m5stack/cores3-felipe)
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          cd firmware
+          python3 scripts/build.py m5stack/cores3-felipe --name cores3-felipe --language pt-BR
+
+      - name: Verifica versão do app vs tag
+        # O anti-rollback do esp32FOTA compara a versão do manifest com a
+        # versão embutida no app; divergência causaria recusa/loop de OTA.
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          APP_VERSION=$(python3 - <<'EOF'
+          import struct
+          with open("firmware/build/firmware.bin", "rb") as f:
+              header = f.read(0x30)
+          assert struct.unpack("<I", header[0:4])[0] == 0xABCD5432, "app desc magic inválido"
+          print(header[0x10:0x30].decode("utf-8").rstrip("\x00"))
+          EOF
+          )
+          echo "tag=$TAG app=$APP_VERSION"
+          [ "$TAG" = "$APP_VERSION" ] || {
+            echo "Versão do app ($APP_VERSION) difere da tag ($TAG)." >&2
+            echo "Atualize a versão do projeto no firmware e re-cut a tag." >&2
+            exit 1
+          }
+
+      - name: Assina binários (RSA-4096, ADR-020)
+        # App + assets no mesmo round, ambos assinados: sign || binário.
+        shell: bash
+        env:
+          OTA_RSA_PRIVATE_KEY: ${{ secrets.OTA_RSA_PRIVATE_KEY }}
+        run: |
+          cd firmware
+          if [ -z "$OTA_RSA_PRIVATE_KEY" ]; then
+            echo "Secret OTA_RSA_PRIVATE_KEY não configurado." >&2
+            exit 1
+          fi
+          printf '%s\n' "$OTA_RSA_PRIVATE_KEY" > priv_key.pem
+          chmod 600 priv_key.pem
+          BITS=$(openssl rsa -in priv_key.pem -text -noout 2>/dev/null | head -n 1)
+          case "$BITS" in
+            *"(4096 bit"*) ;;
+            *) echo "Chave não é RSA-4096: $BITS" >&2; exit 1 ;;
+          esac
+
+          ASSETS=build/generated_assets.bin
+          if [ ! -f "$ASSETS" ]; then
+            echo "Imagem de assets não encontrada em $ASSETS" >&2
+            ls build/ >&2
+            exit 1
+          fi
+
+          openssl dgst -sign priv_key.pem -sha256 -out firmware.sign -binary build/firmware.bin
+          cat firmware.sign build/firmware.bin > firmware.img
+          openssl dgst -sign priv_key.pem -sha256 -out assets.sign -binary "$ASSETS"
+          cat assets.sign "$ASSETS" > filesystem.img
+          rm -f priv_key.pem firmware.sign assets.sign
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ota-binaries
+          path: |
+            firmware/firmware.img
+            firmware/filesystem.img
+          if-no-files-found: error
+
+  release:
+    name: Publica Release + atualiza manifest
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # O manifest vive no branch default, não no commit da tag.
+          ref: tamagotchi
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ota-binaries
+          path: dist
+
+      - name: Cria GitHub Release com os binários assinados
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Robô Felipe ${{ github.ref_name }}" \
+            --generate-notes \
+            dist/firmware.img dist/filesystem.img
+
+      - name: Atualiza manifest OTA
+        run: |
+          python3 ota/manifest/update_manifest.py "${{ github.ref_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ota/manifest/manifest.json
+          git commit -m "Atualiza manifest OTA para ${{ github.ref_name }}"
+          git push origin HEAD:tamagotchi

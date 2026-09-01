@@ -86,6 +86,12 @@ firmware-build:
 firmware-locales:
     cd firmware && python3 scripts/gen_lang.py --language pt-BR --output main/assets/lang_config.h
 
+# --- OTA (manifest, ADR-020) ---
+
+# Valida o manifest OTA (formato, semver, URLs de Release deste repo).
+ota-manifest-check:
+    python3 ota/manifest/validate_manifest.py
+
 # --- Docs ---
 
 # Verifica links de .md não apontam para arquivos removidos (resíduos).

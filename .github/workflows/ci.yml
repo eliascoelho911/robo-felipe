@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [tamagotchi]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ts:
+    name: TypeScript (core + contract)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # Lê a versão do campo packageManager do package.json raiz.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instala dependências (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (biome ci — falha sem corrigir)
+        run: pnpm exec biome ci .
+
+      - name: Testes (vitest — core + contract)
+        run: pnpm -r test
+
+      - name: Gera JSON Schema do contrato
+        # Os schemas gerados são gitignored; aqui só validamos que a geração
+        # roda sem erro com os schemas Zod atuais.
+        run: pnpm --filter contract gen
+
+  android:
+    name: Android (Plataforma)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-gradle@v4
+
+      # Inclui o build nativo NDK/CMake (Opus) via externalNativeBuild.
+      - name: Lint + testes + build debug
+        working-directory: android
+        run: ./gradlew lint test assembleDebug --stacktrace
+
+  docker:
+    name: Nuvem (docker compose config)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Só o submódulo da Nuvem — o override mescla sobre o compose do
+      # upstream. (O submódulo firmware não é necessário aqui.)
+      - name: Init submódulo esp32-server/upstream
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init esp32-server/upstream
+
+      # Valida o merge base+override sem subir containers (AGENTS.md).
+      - name: Valida docker compose (base + override)
+        run: |
+          docker compose --project-directory esp32-server \
+            -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+            -f esp32-server/docker-compose.override.yml config > /dev/null
+
+  docs:
+    name: Docs (resíduos de branches arquivados)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reusa a mesma recipe local (just check-docs) em vez de duplicar o
+      # grep — CI e máquina do dev verificam a mesma coisa.
+      - name: Instala just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
+            | bash -s -- --to "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - run: just check-docs
+
+  ota-manifest:
+    name: OTA manifest (formato + URLs)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Valida ota/manifest/manifest.json
+        run: python3 ota/manifest/validate_manifest.py

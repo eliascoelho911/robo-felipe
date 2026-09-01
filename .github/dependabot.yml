@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Workflows do repo (ci.yml, release.yml) — bumpa as versions das actions.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Workspace pnpm (raiz + core + contract) — um único lockfile na raiz,
+  # agrupado por dependência para abrir um PR só por bump.
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /core
+      - /packages/contract
+    schedule:
+      interval: weekly
+    groups:
+      npm-workspace:
+        patterns: ["*"]
+
+  # App Android (version catalog + build.gradle.kts).
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        patterns: ["*"]
