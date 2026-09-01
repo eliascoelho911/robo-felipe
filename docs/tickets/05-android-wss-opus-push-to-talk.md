@@ -31,7 +31,7 @@ ActionGrid), `NavigationKeys` (Nav3 órfão). **Adicionar** permissão
 **Blocked by:** 03 (xiaozhi-server rodando para testar handshake WSS),
 04 (adapter Python com pet tools para o fluxo completo de voz).
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
 - [ ] `android/app/src/main/java/com/example/robofelipe/audio/` criado: `OpusEncoder`, `OpusDecoder`, `OpusStreamPlayer`, `EnhancedAudioManager` (portados/adaptados do xiaoniu).
 - [ ] `android/app/src/main/java/com/example/robofelipe/network/` criado: `WebSocketManager` (OkHttp WebSocket, handshake xiaozhi, envio/recepção de frames Opus binários + JSON textuais).
