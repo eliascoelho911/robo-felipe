@@ -92,6 +92,14 @@ export class PetStore {
     return state;
   }
 
+  // Avança o relógio do pet: aplica decay e persiste com lastUpdatedMs = now.
+  // Usado pelo Batch endpoint para avançar stats on-demand sem aplicar deltas.
+  advance(petId: string, nowMs: number): PetState {
+    const state = this.load(petId, nowMs);
+    this.persist(state);
+    return state;
+  }
+
   // Aplica múltiplos deltas de uma vez (tools que mutam várias stats) e persiste.
   mutate(petId: string, deltas: Partial<Record<StatName, number>>, nowMs: number): PetState {
     const current = this.load(petId, nowMs);

@@ -82,6 +82,12 @@ class MockPetStore {
     return state;
   }
 
+  advance(petId: string, nowMs: number): PetState {
+    const state = this.load(petId, nowMs);
+    this.states.set(petId, state);
+    return state;
+  }
+
   mutate(petId: string, deltas: Partial<Record<StatName, number>>, nowMs: number): PetState {
     const current = this.load(petId, nowMs);
     const state: PetState = {

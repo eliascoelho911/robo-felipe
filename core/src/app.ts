@@ -8,7 +8,7 @@ import {
   Batch,
   type Emotion,
   Emotion as EmotionSchema,
-  type PlanoDeAcoes,
+  PlanoDeAcoes,
   type Trigger,
 } from '@robo-felipe/contract';
 import { Hono } from 'hono';
@@ -49,16 +49,21 @@ const TOOL_DELTAS: Record<string, Partial<Record<StatName, number>>> = {
 
 const WRITE_TOOLS = Object.keys(TOOL_DELTAS);
 
+// Thresholds de mapeamento Trigger→Ação (Spec 02). Valores indicativos —
+// tuning fino fica para iteração, como TOOL_DELTAS.
+const COURAGE_THRESHOLD = 50;
+const DIZZY_INTENSITY = 0.5;
+
 // Mapeia um Trigger para um conjunto de Ações (Spec 02, ADR-023 §7).
 // `shake` com courage baixo → scared; senão → get_dizzy.
 // `button` → saudação fixa pt-BR. `manual`/`voice` → sem Ações no Plano.
 function triggerToActions(trigger: Trigger, stats: Stats): Action[] {
   switch (trigger.kind) {
     case 'shake':
-      if (stats.courage < 50) {
+      if (stats.courage < COURAGE_THRESHOLD) {
         return [{ kind: 'express_emotion', emotion: 'scared' }];
       }
-      return [{ kind: 'get_dizzy', intensity: 0.5 }];
+      return [{ kind: 'get_dizzy', intensity: DIZZY_INTENSITY }];
     case 'button':
       return [{ kind: 'speak', text: 'Oi! Que bom te ver!' }];
     case 'manual':
@@ -142,7 +147,8 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   // Cache de idempotência: batchId → Plano já processado (evita duplo decay
-  // se a Plataforma reenviar o mesmo Batch, Spec 02).
+  // se a Plataforma reenviar o mesmo Batch, Spec 02). MVP em memória — não
+  // sobrevive a restart; persistir em `processed_batches` se necessário.
   const planoCache = new Map<string, PlanoDeAcoes>();
 
   app.post('/batch', async (c) => {
@@ -168,9 +174,9 @@ export function createApp(deps: AppDeps): Hono {
       return c.json(cached);
     }
 
-    // advanceStats on-demand: carrega estado (aplica decay por timestamp
-    // decorrido desde lastUpdatedMs) e persiste com lastUpdatedMs = now.
-    const state = deps.store.mutate(batch.petId, {}, deps.now());
+    // advanceStats on-demand: aplica decay por timestamp decorrido desde
+    // lastUpdatedMs e persiste com lastUpdatedMs = now (Spec 02).
+    const state = deps.store.advance(batch.petId, deps.now());
     const snapshot = toResponse(state);
 
     // Concatena as Ações de todos os Triggers em ordem (Spec 02)
@@ -186,8 +192,15 @@ export function createApp(deps: AppDeps): Hono {
       state: snapshot,
     };
 
-    planoCache.set(batch.batchId, plano);
-    return c.json(plano);
+    // Valida o Plano em runtime antes de responder (US 12 — garantia de
+    // que a resposta é sempre um Plano válido pelo schema Zod).
+    const validated = PlanoDeAcoes.safeParse(plano);
+    if (!validated.success) {
+      return c.json({ error: 'Plano inválido', details: validated.error.issues }, 500);
+    }
+
+    planoCache.set(batch.batchId, validated.data);
+    return c.json(validated.data);
   });
 
   return app;
