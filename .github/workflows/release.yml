@@ -19,7 +19,7 @@ jobs:
     container:
       image: espressif/idf:v6.0.2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Init submódulo firmware
         run: |
@@ -86,7 +86,7 @@ jobs:
           cat assets.sign "$ASSETS" > filesystem.img
           rm -f priv_key.pem firmware.sign assets.sign
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ota-binaries
           path: |
@@ -99,12 +99,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # O manifest vive no branch default, não no commit da tag.
           ref: tamagotchi
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ota-binaries
           path: dist

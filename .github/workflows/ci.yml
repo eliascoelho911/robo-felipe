@@ -13,12 +13,12 @@ jobs:
     name: TypeScript (core + contract)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         # Lê a versão do campo packageManager do package.json raiz.
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -41,9 +41,9 @@ jobs:
     name: Android (Plataforma)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -59,7 +59,7 @@ jobs:
     name: Nuvem (docker compose config)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Só o submódulo da Nuvem — o override mescla sobre o compose do
       # upstream. (O submódulo firmware não é necessário aqui.)
@@ -79,7 +79,7 @@ jobs:
     name: Docs (resíduos de branches arquivados)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Reusa a mesma recipe local (just check-docs) em vez de duplicar o
       # grep — CI e máquina do dev verificam a mesma coisa.
@@ -95,7 +95,7 @@ jobs:
     name: OTA manifest (formato + URLs)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Valida ota/manifest/manifest.json
         run: python3 ota/manifest/validate_manifest.py
