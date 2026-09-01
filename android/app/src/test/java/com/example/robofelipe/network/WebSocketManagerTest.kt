@@ -2,8 +2,11 @@ package com.example.robofelipe.network
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -14,13 +17,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WebSocketManagerTest {
 
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
     private lateinit var manager: WebSocketManager
 
     @Before
     fun setup() {
-        manager = WebSocketManager()
+        manager = WebSocketManager(scope = testScope)
     }
 
     @Test
@@ -107,7 +113,7 @@ class WebSocketManagerTest {
     }
 
     @Test
-    fun handleHelloResponse_emitsHelloAndConnectedEvents() = runTest {
+    fun handleHelloResponse_emitsHelloAndConnectedEvents() = runTest(testDispatcher) {
         val events = mutableListOf<WebSocketEvent>()
         val collectJob = launch {
             manager.events.collect { events.add(it) }
@@ -124,7 +130,7 @@ class WebSocketManagerTest {
     }
 
     @Test
-    fun handleHelloResponse_wrongTransport_emitsError() = runTest {
+    fun handleHelloResponse_wrongTransport_emitsError() = runTest(testDispatcher) {
         val events = mutableListOf<WebSocketEvent>()
         val collectJob = launch {
             manager.events.collect { events.add(it) }
@@ -155,7 +161,7 @@ class WebSocketManagerTest {
     }
 
     @Test
-    fun binaryMessageEvent_emitsCorrectData() = runTest {
+    fun binaryMessageEvent_emitsCorrectData() = runTest(testDispatcher) {
         val events = mutableListOf<WebSocketEvent>()
         val collectJob = launch {
             manager.events.collect { events.add(it) }

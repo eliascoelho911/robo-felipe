@@ -3,9 +3,9 @@ package com.example.robofelipe.audio
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.AcousticEchoCanceler
+import android.media.audiofx.AcousticEchoCanceler
 import android.media.MediaRecorder
-import android.media.NoiseSuppressor
+import android.media.audiofx.NoiseSuppressor
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

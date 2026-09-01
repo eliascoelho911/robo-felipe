@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,13 +23,13 @@ import java.util.concurrent.TimeUnit
 class WebSocketManager(
     private val client: OkHttpClient = defaultClient,
     private val gson: Gson = Gson(),
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
 ) {
 
     private var webSocket: WebSocket? = null
     private var isConnected = false
     private var isHandshakeComplete = false
     private var shouldReconnect = true
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var sessionId: String? = null
     private var helloTimeoutJob: Job? = null

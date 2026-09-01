@@ -3,7 +3,9 @@ package com.example.robofelipe.ui.voice
 import com.example.robofelipe.network.WebSocketEvent
 import com.example.robofelipe.network.WebSocketManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -17,25 +19,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class VoiceViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
     private lateinit var webSocketManager: WebSocketManager
     private lateinit var viewModel: VoiceViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        webSocketManager = WebSocketManager()
+        webSocketManager = WebSocketManager(scope = testScope)
     }
 
     @After
     fun teardown() {
         Dispatchers.resetMain()
-        webSocketManager.cleanup()
+        webSocketManager.disconnect()
     }
 
-    private suspend fun createViewModel(): VoiceViewModel {
+    private suspend fun TestScope.createViewModel(): VoiceViewModel {
         viewModel = VoiceViewModel(null, webSocketManager)
         // Deixa o collector do init{} iniciar
         advanceUntilIdle()
