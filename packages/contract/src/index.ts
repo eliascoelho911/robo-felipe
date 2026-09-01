@@ -127,10 +127,12 @@ export type PetStateSnapshot = z.infer<typeof PetStateSnapshot>;
 // "Plano de Ações"). Referencia o batchId que originou o plano. Pode
 // incluir um snapshot do estado do pet para a UI da Plataforma.
 
+// actions pode ser vazio — Batch com só Trigger `manual` gera Plano com
+// actions: [] mas inclui state (snapshot only, Spec 02).
 export const PlanoDeAcoes = z.object({
   version: z.literal(1),
   batchId: z.string().uuid(),
-  actions: z.array(Action).min(1),
+  actions: z.array(Action),
   state: PetStateSnapshot.optional(),
 });
 export type PlanoDeAcoes = z.infer<typeof PlanoDeAcoes>;

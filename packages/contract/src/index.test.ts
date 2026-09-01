@@ -117,8 +117,9 @@ describe('Plano de Ações', () => {
     expect(PlanoDeAcoes.parse(plano)).toEqual(plano);
   });
 
-  it('rejeita Plano sem Ações', () => {
-    expect(() => PlanoDeAcoes.parse({ ...plano, actions: [] })).toThrow();
+  it('aceita Plano sem Ações (manual → snapshot only, Spec 02)', () => {
+    const emptyActions = { ...plano, actions: [] };
+    expect(PlanoDeAcoes.parse(emptyActions)).toEqual(emptyActions);
   });
 
   it('discrimina Ações por kind', () => {
