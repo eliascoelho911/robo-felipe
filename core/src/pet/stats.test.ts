@@ -67,6 +67,42 @@ describe('stats', () => {
     expect(umaHoraAdulto.fullness).toBeGreaterThan(umaHoraJovem.fullness);
   });
 
+  it('decay com elapsed=0 não muda stats', () => {
+    const stats = initialStats();
+    const decaidas = decay(stats, 1_000_000, 1_000_000);
+    expect(decaidas).toEqual(stats);
+  });
+
+  it('decay com 1 dia (86400s) aplica decay significativo em daily', () => {
+    const stats = initialStats();
+    const decaidas = decay(stats, 0, 86_400_000);
+    // fullness daily: 15/dia → 80 - 15 = 65
+    expect(decaidas.fullness).toBeCloseTo(65, 0);
+  });
+
+  it('decay com 30 dias leva stats perto de 0', () => {
+    const stats = initialStats();
+    const decaidas = decay(stats, 0, 30 * 86_400_000);
+    // 30 dias de decay: daily perde 15*30=450, clamped em 0
+    expect(decaidas.fullness).toBe(0);
+    expect(decaidas.energy).toBe(0);
+    // monthly perde 5 em 30 dias
+    expect(decaidas.maturity).toBeCloseTo(75, 0);
+  });
+
+  it('cada tier decai na rate correta em 1 hora', () => {
+    const stats = initialStats();
+    const decaidas = decay(stats, 0, 3_600_000);
+    // daily: 15/24 por hora
+    expect(decaidas.fullness).toBeCloseTo(80 - 15 / 24, 2);
+    // weekly: 10/(7*24) por hora
+    expect(decaidas.cleanliness).toBeCloseTo(80 - 10 / (7 * 24), 2);
+    // monthly: 5/(30*24) por hora
+    expect(decaidas.maturity).toBeCloseTo(80 - 5 / (30 * 24), 2);
+    // very-slow: 2/(30*24) por hora
+    expect(decaidas.serenity).toBeCloseTo(80 - 2 / (30 * 24), 2);
+  });
+
   it('applyStat respeita [0, 100]', () => {
     const stats = initialStats();
     expect(applyStat(stats, 'fullness', 1000).fullness).toBe(100);

@@ -3,7 +3,14 @@
 // xiaozhi-server registra cada tool como ToolType.SYSTEM_CTL, chama o Core
 // via HTTP, e usa conn para enviar ações ao device.
 
-import { type Emotion, Emotion as EmotionSchema } from '@robo-felipe/contract';
+import {
+  type Action,
+  Batch,
+  type Emotion,
+  Emotion as EmotionSchema,
+  type PlanoDeAcoes,
+  type Trigger,
+} from '@robo-felipe/contract';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import {
@@ -41,6 +48,24 @@ const TOOL_DELTAS: Record<string, Partial<Record<StatName, number>>> = {
 };
 
 const WRITE_TOOLS = Object.keys(TOOL_DELTAS);
+
+// Mapeia um Trigger para um conjunto de Ações (Spec 02, ADR-023 §7).
+// `shake` com courage baixo → scared; senão → get_dizzy.
+// `button` → saudação fixa pt-BR. `manual`/`voice` → sem Ações no Plano.
+function triggerToActions(trigger: Trigger, stats: Stats): Action[] {
+  switch (trigger.kind) {
+    case 'shake':
+      if (stats.courage < 50) {
+        return [{ kind: 'express_emotion', emotion: 'scared' }];
+      }
+      return [{ kind: 'get_dizzy', intensity: 0.5 }];
+    case 'button':
+      return [{ kind: 'speak', text: 'Oi! Que bom te ver!' }];
+    case 'manual':
+    case 'voice':
+      return [];
+  }
+}
 
 // Snapshot de resposta — corresponde a PetStateSnapshot do contract:
 // {stage, mood, health, sickness, ageDays, stats, lastInteraction}.
@@ -114,6 +139,55 @@ export function createApp(deps: AppDeps): Hono {
     const deltas = TOOL_DELTAS[tool] ?? {};
     const state = deps.store.mutate(id, deltas, deps.now());
     return c.json(toResponse(state));
+  });
+
+  // Cache de idempotência: batchId → Plano já processado (evita duplo decay
+  // se a Plataforma reenviar o mesmo Batch, Spec 02).
+  const planoCache = new Map<string, PlanoDeAcoes>();
+
+  app.post('/batch', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (!body) {
+      return c.json({ error: 'Body inválido' }, 400);
+    }
+
+    const parsed = Batch.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Batch inválido', details: parsed.error.issues }, 400);
+    }
+
+    const batch = parsed.data;
+
+    if (batch.petId !== deps.petId) {
+      return c.json({ error: `petId não encontrado: ${batch.petId}` }, 404);
+    }
+
+    // Idempotência: retorna o Plano cached se o batchId já foi processado
+    const cached = planoCache.get(batch.batchId);
+    if (cached) {
+      return c.json(cached);
+    }
+
+    // advanceStats on-demand: carrega estado (aplica decay por timestamp
+    // decorrido desde lastUpdatedMs) e persiste com lastUpdatedMs = now.
+    const state = deps.store.mutate(batch.petId, {}, deps.now());
+    const snapshot = toResponse(state);
+
+    // Concatena as Ações de todos os Triggers em ordem (Spec 02)
+    const actions: Action[] = [];
+    for (const trigger of batch.triggers) {
+      actions.push(...triggerToActions(trigger, state.stats));
+    }
+
+    const plano: PlanoDeAcoes = {
+      version: 1,
+      batchId: batch.batchId,
+      actions,
+      state: snapshot,
+    };
+
+    planoCache.set(batch.batchId, plano);
+    return c.json(plano);
   });
 
   return app;

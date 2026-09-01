@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { type AppDeps, createApp } from './app.js';
-import { applyDeltas, applyStat, initialStats, type PetState, type StatName } from './pet/stats.js';
+import { estagioOf } from './pet/stages.js';
+import {
+  applyDeltas,
+  applyStat,
+  decay,
+  initialStats,
+  type PetState,
+  STAGE_DECAY_MULTIPLIER,
+  type StatName,
+} from './pet/stats.js';
 import type { PetStore } from './pet/store.js';
 
 type StateBody = {
@@ -13,27 +22,53 @@ type StateBody = {
   lastInteraction: number;
 };
 
+type PlanoBody = {
+  version: number;
+  batchId: string;
+  actions: {
+    kind: string;
+    text?: string;
+    emotion?: string;
+    intensity?: number;
+    durationMs?: number;
+  }[];
+  state?: StateBody;
+};
+
 // Mock store em memória — better-sqlite3 segfaulta neste ambiente.
-// Imita a interface pública de PetStore: load, adjust, mutate, close.
+// Imita a interface pública de PetStore: load (aplica decay, não persiste),
+// adjust, mutate (persiste), close.
 class MockPetStore {
   private states = new Map<string, PetState>();
 
   load(petId: string, nowMs: number): PetState {
     const existing = this.states.get(petId);
     if (!existing) {
+      const stats = initialStats();
       const state: PetState = {
         petId,
-        stats: initialStats(),
+        stats,
         lastUpdatedMs: nowMs,
-        estagio: 'Filhote',
+        estagio: estagioOf(stats.maturity),
         createdAt: nowMs,
       };
       this.states.set(petId, state);
       return state;
     }
-    const updated = { ...existing, lastUpdatedMs: nowMs };
-    this.states.set(petId, updated);
-    return updated;
+    const stage = estagioOf(existing.stats.maturity);
+    const decayedStats = decay(
+      existing.stats,
+      existing.lastUpdatedMs,
+      nowMs,
+      STAGE_DECAY_MULTIPLIER[stage],
+    );
+    return {
+      petId,
+      stats: decayedStats,
+      lastUpdatedMs: nowMs,
+      estagio: estagioOf(decayedStats.maturity),
+      createdAt: existing.createdAt,
+    };
   }
 
   adjust(petId: string, stat: StatName, delta: number, nowMs: number): PetState {
@@ -190,5 +225,219 @@ describe('app (HTTP endpoints)', () => {
       const res = await app.request(`/pet/felipe/${tool}`, { method: 'POST' });
       expect(res.status).toBe(200);
     }
+  });
+
+  describe('POST /batch', () => {
+    const validBatch = {
+      version: 1,
+      batchId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      platformId: 'android-sobrinho',
+      petId: 'felipe',
+      triggers: [
+        {
+          id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+          kind: 'button',
+          timestamp: 1_000_000,
+          payload: {},
+        },
+      ],
+    };
+
+    function postBatch(app: ReturnType<typeof createApp>, body: unknown) {
+      return app.request('/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+
+    it('Batch com 1 Trigger button → Plano com [speak{oi!}] + state', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, validBatch);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.version).toBe(1);
+      expect(body.batchId).toBe(validBatch.batchId);
+      expect(body.actions).toHaveLength(1);
+      expect(body.actions[0]?.kind).toBe('speak');
+      expect(body.actions[0]?.text).toBe('Oi! Que bom te ver!');
+      expect(body.state).toBeDefined();
+      expect(body.state?.stats).toHaveProperty('fullness');
+    });
+
+    it('Batch com 1 Trigger shake (courage alto) → Plano com [get_dizzy]', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, {
+        ...validBatch,
+        triggers: [
+          {
+            id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'shake',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.actions).toHaveLength(1);
+      expect(body.actions[0]?.kind).toBe('get_dizzy');
+    });
+
+    it('Batch com 1 Trigger shake (courage baixo) → Plano com [express_emotion{scared}]', async () => {
+      const mockStore = new MockPetStore();
+      const deps = makeDeps({ store: mockStore as unknown as PetStore });
+      mockStore.adjust('felipe', 'courage', -80, 1_000_000);
+      const app = createApp(deps);
+      const res = await postBatch(app, {
+        ...validBatch,
+        triggers: [
+          {
+            id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'shake',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.actions).toHaveLength(1);
+      expect(body.actions[0]?.kind).toBe('express_emotion');
+      expect(body.actions[0]?.emotion).toBe('scared');
+    });
+
+    it('Batch com 1 Trigger manual → Plano com [] + state (snapshot only)', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, {
+        ...validBatch,
+        triggers: [
+          {
+            id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'manual',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.actions).toHaveLength(0);
+      expect(body.state).toBeDefined();
+    });
+
+    it('Batch com 1 Trigger voice → Plano com [] (sem Ações no Plano)', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, {
+        ...validBatch,
+        triggers: [
+          {
+            id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'voice',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.actions).toHaveLength(0);
+      expect(body.state).toBeDefined();
+    });
+
+    it('Batch com múltiplos Triggers → Plano com Ações concatenadas', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, {
+        ...validBatch,
+        triggers: [
+          {
+            id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'button',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+          {
+            id: '7ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'shake',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+          {
+            id: '8ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
+            kind: 'manual',
+            timestamp: 1_000_000,
+            payload: {},
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.actions).toHaveLength(2);
+      expect(body.actions[0]?.kind).toBe('speak');
+      expect(body.actions[1]?.kind).toBe('get_dizzy');
+    });
+
+    it('Batch inválido (sem triggers) → 400', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, { ...validBatch, triggers: [] });
+      expect(res.status).toBe(400);
+    });
+
+    it('Batch inválido (sem version) → 400', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, {
+        batchId: validBatch.batchId,
+        platformId: validBatch.platformId,
+        petId: validBatch.petId,
+        triggers: validBatch.triggers,
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('Batch com body não-JSON → 400', async () => {
+      const app = createApp(makeDeps());
+      const res = await app.request('/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not-json',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('Batch com petId errado → 404', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, { ...validBatch, petId: 'outro-pet' });
+      expect(res.status).toBe(404);
+    });
+
+    it('advanceStats: Batch após tempo decorrido → stats decaídas no state', async () => {
+      let now = 1_000_000;
+      const app = createApp(makeDeps({ now: () => now }));
+      await app.request('/pet/felipe/state');
+      now += 24 * 60 * 60 * 1000;
+      const res = await postBatch(app, validBatch);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.state?.stats.fullness).toBeLessThan(80);
+    });
+
+    it('advanceStats: elapsed=0 (sem decay) → stats permanecem em 80', async () => {
+      const app = createApp(makeDeps());
+      const res = await postBatch(app, validBatch);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as PlanoBody;
+      expect(body.state?.stats.fullness).toBe(80);
+    });
+
+    it('idempotência: mesmo batchId → mesmo Plano (sem duplo decay)', async () => {
+      let now = 1_000_000;
+      const app = createApp(makeDeps({ now: () => now }));
+      const res1 = await postBatch(app, validBatch);
+      const body1 = (await res1.json()) as PlanoBody;
+      now += 24 * 60 * 60 * 1000;
+      const res2 = await postBatch(app, validBatch);
+      const body2 = (await res2.json()) as PlanoBody;
+      expect(body2.state?.stats.fullness).toBe(body1.state?.stats.fullness);
+    });
   });
 });
