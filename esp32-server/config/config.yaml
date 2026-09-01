@@ -80,6 +80,22 @@ exit_commands:
 # emenda). O host.docker.internal é mapeado em docker-compose.override.yml.
 CORE_HTTP_URL: http://host.docker.internal:3000
 
+# --- Intent: function_call (sobrescreve o bloco inteiro do upstream) ---
+# Adiciona pet_tools à lista de functions do function_call. O merge do
+# xiaozhi é raso, então precisamos repetir a lista completa do upstream
+# (config.yaml do xiaozhi-server) + pet_tools. handle_exit_intent é
+# carregado por default (não precisa estar aqui).
+Intent:
+  function_call:
+    type: function_call
+    functions:
+      - change_role
+      - web_search
+      - get_weather
+      - get_news_from_newsnow
+      - play_music
+      - pet_tools
+
 # --- Provedores (entradas completas para resistir a merge raso) ---
 ASR:
   GroqASR:
