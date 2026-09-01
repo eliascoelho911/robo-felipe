@@ -274,15 +274,27 @@ Nuvem, OTA, firmware e `packages/contract/` não têm AGENTS.md próprio —
 suas regras vivem aqui. Crie um AGENTS.md aninhado só quando o
 subsistema acumular regras que mereçam isolamento (padrão xiaozhi).
 
+## Specs (specifications)
+
+Specs de implementação vivem em `docs/specs/`, um arquivo por spec
+nomeado `<NN>-<slug>.md` (numerados de `01` na ordem de dependência).
+Cada spec descreve o **quê** e o **porquê** de uma feature — Problem
+Statement, Solution, User Stories, Implementation Decisions, Testing
+Decisions, Out of Scope, Further Notes — sem prescrever file paths ou
+code snippets. O template está na skill `/to-spec`.
+
+Cada spec referencia seu ticket correspondente em `docs/tickets/` pelo
+número. Specs são a fonte da verdade para o agente que implementa o
+ticket.
+
 ## Tickets (tracer-bullet slices)
 
-Tickets de implementação vivem em `.scratch/<feature-slug>/issues/`, um
-arquivo por ticket nomeado `<NN>-<slug>.md` (numerados de `01` em ordem
-de dependência, blockers primeiro). Cada ticket é um **tracer-bullet
-vertical slice** — corta todas as camadas (schema, API, UI, tests) e é
-demoable por si só. Declara `Blocked by` (tickets que devem completar
-antes) e `Status: ready-for-agent`. O template está na skill
-`/to-tickets`.
+Tickets de implementação vivem em `docs/tickets/`, um arquivo por ticket
+nomeado `<NN>-<slug>.md` (numerados de `01` em ordem de dependência,
+blockers primeiro). Cada ticket é um **tracer-bullet vertical slice** —
+corta todas as camadas (schema, API, UI, tests) e é demoable por si só.
+Declara `Blocked by` (tickets que devem completar antes) e
+`Status: ready-for-agent`. O template está na skill `/to-tickets`.
 
 Feature atual: `fase-1-core-android` (Core TS/Bun + xiaozhi-server +
 Android, 6 tickets). Fase 2 (CoreS3) inicia após o hardware chegar.
