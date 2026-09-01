@@ -4,22 +4,26 @@
 
 import type { Database as DB } from 'better-sqlite3';
 import Database from 'better-sqlite3';
-import { createActor } from 'xstate';
-import { estagioOf, type PetActor, petMachine } from './stages.js';
+import { estagioOf } from './stages.js';
 import {
   applyDeltas,
   applyStat,
   decay,
   initialStats,
   type PetState,
+  STAGE_DECAY_MULTIPLIER,
   type StatName,
   type Stats,
 } from './stats.js';
 
+interface PetRow {
+  stats_json: string;
+  last_updated_ms: number;
+  created_at: number;
+}
+
 export class PetStore {
   private readonly db: DB;
-  // um actor por petId, em memória; o estado canônico é persistido no SQLite
-  private readonly actors = new Map<string, PetActor>();
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
@@ -29,17 +33,22 @@ export class PetStore {
         pet_id     TEXT PRIMARY KEY,
         stats_json TEXT NOT NULL,
         last_updated_ms INTEGER NOT NULL,
-        experiencia REAL NOT NULL DEFAULT 0
+        created_at INTEGER NOT NULL
       )
     `);
+    // migrar tabela pré-created_at: adiciona coluna se faltar
+    try {
+      this.db.exec('ALTER TABLE pet_state ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0');
+    } catch {
+      // coluna já existe — ignora
+    }
   }
 
   // Carrega (ou cria) o estado do pet. Aplica decay até o instante `nowMs`.
   load(petId: string, nowMs: number): PetState {
-    const actor = this.getActor(petId);
     const row = this.db
-      .prepare<[string], { stats_json: string; last_updated_ms: number; experiencia: number }>(
-        'SELECT stats_json, last_updated_ms, experiencia FROM pet_state WHERE pet_id = ?',
+      .prepare<[string], PetRow>(
+        'SELECT stats_json, last_updated_ms, created_at FROM pet_state WHERE pet_id = ?',
       )
       .get(petId);
 
@@ -49,24 +58,22 @@ export class PetStore {
         petId,
         stats,
         lastUpdatedMs: nowMs,
-        estagio: estagioOf(actor),
+        estagio: estagioOf(stats.maturity),
+        createdAt: nowMs,
       };
-      this.persist(state, 0);
+      this.persist(state);
       return state;
     }
 
-    let stats = JSON.parse(row.stats_json) as Stats;
-    stats = decay(stats, row.last_updated_ms, nowMs);
-    // sincroniza experiência do actor
-    actor.send({
-      type: 'GANHAR_EXP',
-      quantidade: row.experiencia - actor.getSnapshot().context.experiencia,
-    });
+    const stats = JSON.parse(row.stats_json) as Stats;
+    const stage = estagioOf(stats.maturity);
+    const decayedStats = decay(stats, row.last_updated_ms, nowMs, STAGE_DECAY_MULTIPLIER[stage]);
     return {
       petId,
-      stats,
+      stats: decayedStats,
       lastUpdatedMs: nowMs,
-      estagio: estagioOf(actor),
+      estagio: estagioOf(decayedStats.maturity),
+      createdAt: row.created_at,
     };
   }
 
@@ -74,14 +81,14 @@ export class PetStore {
   adjust(petId: string, stat: StatName, delta: number, nowMs: number): PetState {
     const current = this.load(petId, nowMs);
     const nextStats = applyStat(current.stats, stat, delta);
-    const actor = this.getActor(petId);
     const state: PetState = {
       petId,
       stats: nextStats,
       lastUpdatedMs: nowMs,
-      estagio: estagioOf(actor),
+      estagio: estagioOf(nextStats.maturity),
+      createdAt: current.createdAt,
     };
-    this.persist(state, actor.getSnapshot().context.experiencia);
+    this.persist(state);
     return state;
   }
 
@@ -89,32 +96,23 @@ export class PetStore {
   mutate(petId: string, deltas: Partial<Record<StatName, number>>, nowMs: number): PetState {
     const current = this.load(petId, nowMs);
     const nextStats = applyDeltas(current.stats, deltas);
-    const actor = this.getActor(petId);
     const state: PetState = {
       petId,
       stats: nextStats,
       lastUpdatedMs: nowMs,
-      estagio: estagioOf(actor),
+      estagio: estagioOf(nextStats.maturity),
+      createdAt: current.createdAt,
     };
-    this.persist(state, actor.getSnapshot().context.experiencia);
+    this.persist(state);
     return state;
   }
 
-  private getActor(petId: string): PetActor {
-    let actor = this.actors.get(petId);
-    if (!actor) {
-      actor = createActor(petMachine).start();
-      this.actors.set(petId, actor);
-    }
-    return actor;
-  }
-
-  private persist(state: PetState, experiencia: number): void {
+  private persist(state: PetState): void {
     this.db
       .prepare<[string, string, number, number], unknown>(
-        'INSERT INTO pet_state (pet_id, stats_json, last_updated_ms, experiencia) VALUES (?, ?, ?, ?) ON CONFLICT(pet_id) DO UPDATE SET stats_json = excluded.stats_json, last_updated_ms = excluded.last_updated_ms, experiencia = excluded.experiencia',
+        'INSERT INTO pet_state (pet_id, stats_json, last_updated_ms, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(pet_id) DO UPDATE SET stats_json = excluded.stats_json, last_updated_ms = excluded.last_updated_ms',
       )
-      .run(state.petId, JSON.stringify(state.stats), state.lastUpdatedMs, experiencia);
+      .run(state.petId, JSON.stringify(state.stats), state.lastUpdatedMs, state.createdAt);
   }
 
   close(): void {

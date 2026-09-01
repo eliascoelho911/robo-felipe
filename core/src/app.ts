@@ -6,7 +6,14 @@
 import { type Emotion, Emotion as EmotionSchema } from '@robo-felipe/contract';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { healthOf, moodOf, type StatName, type Stats } from './pet/stats.js';
+import {
+  healthOf,
+  moodOf,
+  type PetStage,
+  type StatName,
+  type Stats,
+  sicknessOf,
+} from './pet/stats.js';
 import type { PetStore } from './pet/store.js';
 
 export interface AppDeps {
@@ -17,45 +24,53 @@ export interface AppDeps {
   now: () => number;
 }
 
-// Efeitos de cada tool write nas stats (ADR-023 §7, adaptado para as 17 stats
-// sem `happiness`). Valores indicativos — tuning fino fica para iteração.
+// Efeitos de cada tool write nas stats (ADR-023 §7). `happiness` entra em
+// feed/play/cuddle como contribuição emocional. Valores indicativos —
+// tuning fino fica para iteração.
 const TOOL_DELTAS: Record<string, Partial<Record<StatName, number>>> = {
-  feed: { fullness: 25, affection: 5 },
-  play: { playfulness: 20, sociability: 10, energy: -15 },
+  feed: { fullness: 25, affection: 5, happiness: 10 },
+  play: { playfulness: 20, sociability: 10, happiness: 10, energy: -15 },
   rest: { energy: 30, serenity: 10 },
-  clean: { cleanliness: 30, comfort: 10 },
-  cuddle: { affection: 15, comfort: 10 },
+  clean: { cleanliness: 30, comfort: 10, happiness: 5 },
+  cuddle: { affection: 15, comfort: 10, happiness: 10 },
   heal: { comfort: 10 },
   train: { intelligence: 15, focus: 10, maturity: 5, energy: -10 },
-  dance: { playfulness: 15, energy: -10 },
+  dance: { playfulness: 15, happiness: 10, energy: -10 },
   express_emotion: {},
   get_dizzy: { focus: -20 },
 };
 
 const WRITE_TOOLS = Object.keys(TOOL_DELTAS);
 
+// Snapshot de resposta — corresponde a PetStateSnapshot do contract:
+// {stage, mood, health, sickness, ageDays, stats, lastInteraction}.
 interface StateResponse {
-  petId: string;
-  stage: string;
+  stage: PetStage;
   mood: Emotion;
   health: number;
+  sickness: number;
+  ageDays: number;
   stats: Stats;
-  lastUpdatedMs: number;
+  lastInteraction: number;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 function toResponse(state: {
-  petId: string;
   stats: Stats;
   lastUpdatedMs: number;
-  estagio: string;
+  estagio: PetStage;
+  createdAt: number;
 }): StateResponse {
+  const health = healthOf(state.stats);
   return {
-    petId: state.petId,
     stage: state.estagio,
     mood: moodOf(state.stats),
-    health: healthOf(state.stats),
+    health,
+    sickness: sicknessOf(health),
+    ageDays: Math.floor((state.lastUpdatedMs - state.createdAt) / MS_PER_DAY),
     stats: state.stats,
-    lastUpdatedMs: state.lastUpdatedMs,
+    lastInteraction: state.lastUpdatedMs,
   };
 }
 
@@ -96,7 +111,7 @@ export function createApp(deps: AppDeps): Hono {
       }
     }
 
-    const deltas = TOOL_DELTAS[tool]!;
+    const deltas = TOOL_DELTAS[tool] ?? {};
     const state = deps.store.mutate(id, deltas, deps.now());
     return c.json(toResponse(state));
   });

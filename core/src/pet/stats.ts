@@ -1,4 +1,4 @@
-// As 18 stats do pet Tamagotchi (ADR-023): 17 editáveis + `health` derivado.
+// As 19 stats do pet Tamagotchi (ADR-023): 18 editáveis + `health` derivado.
 // `health` nunca é editado direto — é calculado pela fórmula ponderada abaixo.
 // O decay é função pura de timestamp (injetar relógio em testes; nunca
 // chamar Date.now() direto na lógica de domínio).
@@ -13,6 +13,7 @@ export const STAT_NAMES = [
   'fitness',
   'comfort',
   // emocionais (daily/weekly/very-slow)
+  'happiness',
   'playfulness',
   'affection',
   'serenity',
@@ -32,7 +33,8 @@ export const STAT_NAMES = [
 export type StatName = (typeof STAT_NAMES)[number];
 export type Stats = Record<StatName, number>;
 
-// Pesos da fórmula de health (ADR-023 §2). Somam 1.0.
+// Pesos da fórmula de health (ADR-023 §2). Somam 1.0. `happiness` não entra
+// (contribui indiretamente via playfulness); stats sem peso têm peso 0.
 export const HEALTH_WEIGHTS: Readonly<Record<StatName, number>> = {
   fullness: 0.25,
   fitness: 0.2,
@@ -45,6 +47,7 @@ export const HEALTH_WEIGHTS: Readonly<Record<StatName, number>> = {
   intelligence: 0.025,
   playfulness: 0.025,
   // stats sem peso em health
+  happiness: 0,
   serenity: 0,
   sociability: 0,
   loyalty: 0,
@@ -64,6 +67,7 @@ export const DECAY_RATES: Readonly<Record<StatName, number>> = {
   // daily (~-15/dia)
   fullness: 15 / HOURS_PER_DAY,
   energy: 15 / HOURS_PER_DAY,
+  happiness: 15 / HOURS_PER_DAY,
   playfulness: 15 / HOURS_PER_DAY,
   // weekly (~-10/semana)
   cleanliness: 10 / HOURS_PER_WEEK,
@@ -83,6 +87,16 @@ export const DECAY_RATES: Readonly<Record<StatName, number>> = {
   focus: 2 / HOURS_PER_MONTH,
   mischievousness: 2 / HOURS_PER_MONTH,
 };
+
+// Multiplicador de decay por estágio (ADR-023 §3): Filhote decai 1.3× mais
+// rápido, Adulto 0.8× mais devagar, Jovem sem multiplicador.
+export const STAGE_DECAY_MULTIPLIER: Record<PetStage, number> = {
+  Filhote: 1.3,
+  Jovem: 1.0,
+  Adulto: 0.8,
+};
+
+export type PetStage = 'Filhote' | 'Jovem' | 'Adulto';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -111,25 +125,47 @@ export interface PetState {
   stats: Stats;
   // epoch ms da última atualização das stats
   lastUpdatedMs: number;
-  estagio: 'Filhote' | 'Jovem' | 'Adulto';
+  estagio: PetStage;
+  // epoch ms da criação do pet — para calcular ageDays na resposta
+  createdAt: number;
 }
 
-// Decay puro: dadas as stats, o timestamp da última atualização e o
-// timestamp atual, devolve as stats decaídas clamps em [0, 100].
-export function decay(stats: Stats, lastUpdatedMs: number, nowMs: number): Stats {
+// Decay puro: dadas as stats, o timestamp da última atualização, o timestamp
+// atual e o multiplicador de estágio, devolve as stats decaídas em [0, 100].
+export function decay(
+  stats: Stats,
+  lastUpdatedMs: number,
+  nowMs: number,
+  stageMultiplier = 1,
+): Stats {
   const elapsedHours = (nowMs - lastUpdatedMs) / 3_600_000;
   if (elapsedHours <= 0) return { ...stats };
   const result = { ...stats };
   for (const name of STAT_NAMES) {
     const rate = DECAY_RATES[name];
-    result[name] = clamp(result[name] - rate * elapsedHours, 0, 100);
+    result[name] = clamp(result[name] - rate * elapsedHours * stageMultiplier, 0, 100);
   }
   return result;
 }
 
-// Aplica um incremento a uma stat, clamp em [0, 100].
+// Asymptotic damping (ADR-023 §2): mudanças perto dos extremos resistem.
+// Delta positivo: efetivo = delta * ((100 - current) / 100) ^ 0.7.
+// Delta negativo: efetivo = delta * (current / 100) ^ 0.7.
+function dampedDelta(current: number, delta: number): number {
+  if (delta > 0) {
+    return delta * ((100 - current) / 100) ** 0.7;
+  }
+  if (delta < 0) {
+    return delta * (current / 100) ** 0.7;
+  }
+  return 0;
+}
+
+// Aplica um incremento a uma stat com asymptotic damping, clamp em [0, 100].
 export function applyStat(stats: Stats, name: StatName, delta: number): Stats {
-  return { ...stats, [name]: clamp((stats[name] ?? 0) + delta, 0, 100) };
+  const current = stats[name] ?? 0;
+  const effective = dampedDelta(current, delta);
+  return { ...stats, [name]: clamp(current + effective, 0, 100) };
 }
 
 // Aplica múltiplos incrementos de uma vez (para tools que mutam várias stats).
@@ -141,8 +177,17 @@ export function applyDeltas(stats: Stats, deltas: Partial<Record<StatName, numbe
   return result;
 }
 
-// Mood derivado das stats (ADR-023 §6). Prioridade top-down; sem sickness
-// nem flags temporárias no MVP — só stats persistidas.
+// Sickness derivado de health baixo (ADR-023 §2). 0 se health >= 30;
+// escala até 10 quando health = 0. Não persistido — calculado na resposta.
+export function sicknessOf(health: number): number {
+  if (health >= 30) return 0;
+  return Math.round(((30 - health) / 30) * 10 * 10) / 10;
+}
+
+// Mood derivado das stats (ADR-023 §6). Prioridade top-down; MVP deriva 8
+// moods de stats persistidas (hungry, tired, dirty, playful, curious,
+// excited, mischievous, happy). sad/sleepy/bored/dizzy/scared precisam de
+// sickness ou flags — não no MVP do Core interno.
 export function moodOf(stats: Stats): Emotion {
   if (stats.fullness < 25) return 'hungry';
   if (stats.energy < 20) return 'tired';
