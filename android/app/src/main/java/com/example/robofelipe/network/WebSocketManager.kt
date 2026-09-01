@@ -35,27 +35,23 @@ class WebSocketManager(
 
     private var lastUrl: String? = null
     private var lastDeviceId: String? = null
-    private var lastToken: String? = null
     private var reconnectAttempts = 0
 
     internal val _events = MutableSharedFlow<WebSocketEvent>(replay = 0)
     val events: SharedFlow<WebSocketEvent> = _events.asSharedFlow()
 
-    fun connect(url: String, deviceId: String, token: String) {
+    fun connect(url: String, deviceId: String) {
         shouldReconnect = true
         lastUrl = url
         lastDeviceId = deviceId
-        lastToken = token
         isHandshakeComplete = false
         sessionId = null
-        reconnectAttempts = 0
 
         val request = Request.Builder()
             .url(url)
             .addHeader("Device-Id", deviceId)
             .addHeader("Client-Id", deviceId)
             .addHeader("Protocol-Version", "1")
-            .addHeader("Authorization", "Bearer $token")
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
@@ -128,6 +124,7 @@ class WebSocketManager(
         if (transport == "websocket") {
             sessionId = json.get("session_id")?.asString
             isHandshakeComplete = true
+            reconnectAttempts = 0
             helloTimeoutJob?.cancel()
             scope.launch {
                 _events.emit(WebSocketEvent.HelloReceived)
@@ -169,7 +166,6 @@ class WebSocketManager(
 
     internal fun buildAbortMessage(reason: String = "user_interrupt"): String {
         val message = JsonObject().apply {
-            sessionId?.let { addProperty("session_id", it) }
             addProperty("type", "abort")
             addProperty("reason", reason)
         }
@@ -201,6 +197,9 @@ class WebSocketManager(
     }
 
     // Backoff exponencial — evita bombardear servidor indisponível
+    internal fun calculateReconnectDelay(attempts: Int): Long =
+        minOf(RECONNECT_BASE_DELAY_MS * (1L shl attempts), RECONNECT_MAX_DELAY_MS)
+
     private fun reconnectAfterDisconnect() {
         isConnected = false
         isHandshakeComplete = false
@@ -210,14 +209,11 @@ class WebSocketManager(
         if (!shouldReconnect) return
 
         scope.launch {
-            if (lastUrl != null && lastDeviceId != null && lastToken != null) {
-                val delayMs = minOf(
-                    RECONNECT_BASE_DELAY_MS * (1L shl reconnectAttempts),
-                    RECONNECT_MAX_DELAY_MS
-                )
+            if (lastUrl != null && lastDeviceId != null) {
+                val delayMs = calculateReconnectDelay(reconnectAttempts)
                 reconnectAttempts++
                 delay(delayMs)
-                connect(lastUrl!!, lastDeviceId!!, lastToken!!)
+                connect(lastUrl!!, lastDeviceId!!)
             }
         }
     }
@@ -232,7 +228,6 @@ class WebSocketManager(
         sessionId = null
         lastUrl = null
         lastDeviceId = null
-        lastToken = null
     }
 
     fun isConnected(): Boolean = isConnected && isHandshakeComplete

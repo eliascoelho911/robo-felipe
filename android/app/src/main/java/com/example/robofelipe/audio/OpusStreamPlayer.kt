@@ -20,15 +20,11 @@ import kotlinx.coroutines.launch
 class OpusStreamPlayer(
     private val sampleRate: Int,
     private val channels: Int,
-    frameSizeMs: Int,
     private val context: Context? = null,
 ) {
     private val channelConfig =
         if (channels == 1) android.media.AudioFormat.CHANNEL_OUT_MONO
         else android.media.AudioFormat.CHANNEL_OUT_STEREO
-
-    @Suppress("unused")
-    private val frameSize: Int = (sampleRate * frameSizeMs) / 1000
 
     private val audioTrack: AudioTrack = AudioTrack.Builder()
         .setAudioAttributes(

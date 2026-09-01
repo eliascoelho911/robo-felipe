@@ -67,7 +67,8 @@ class WebSocketManagerTest {
 
         val json = Gson().fromJson(manager.buildAbortMessage(), JsonObject::class.java)
 
-        assertEquals("test-session-789", json.get("session_id").asString)
+        // spec 05: abort não leva session_id
+        assertNull(json.get("session_id"))
         assertEquals("abort", json.get("type").asString)
         assertEquals("user_interrupt", json.get("reason").asString)
     }
@@ -135,6 +136,39 @@ class WebSocketManagerTest {
 
         val error = events.filterIsInstance<WebSocketEvent.Error>().firstOrNull()
         assertNotNull(error)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun calculateReconnectDelay_growsExponentially() {
+        assertEquals(2000L, manager.calculateReconnectDelay(0))
+        assertEquals(4000L, manager.calculateReconnectDelay(1))
+        assertEquals(8000L, manager.calculateReconnectDelay(2))
+        assertEquals(16000L, manager.calculateReconnectDelay(3))
+    }
+
+    @Test
+    fun calculateReconnectDelay_capsAtMax() {
+        assertEquals(30000L, manager.calculateReconnectDelay(10))
+        assertEquals(30000L, manager.calculateReconnectDelay(100))
+    }
+
+    @Test
+    fun binaryMessageEvent_emitsCorrectData() = runTest {
+        val events = mutableListOf<WebSocketEvent>()
+        val collectJob = launch {
+            manager.events.collect { events.add(it) }
+        }
+        advanceUntilIdle()
+
+        val binaryData = byteArrayOf(0x00, 0x01, 0x02, 0x03)
+        manager._events.emit(WebSocketEvent.BinaryMessage(binaryData))
+        advanceUntilIdle()
+
+        val binary = events.filterIsInstance<WebSocketEvent.BinaryMessage>().firstOrNull()
+        assertNotNull(binary)
+        assertEquals(4, binary!!.data.size)
 
         collectJob.cancel()
     }

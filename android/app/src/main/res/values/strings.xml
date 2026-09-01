@@ -8,10 +8,10 @@
     <string name="connecting">Conectando…</string>
     <string name="connected">Conectado</string>
     <string name="listening">Ouvindo…</string>
-    <string name="pet_speaking">Pet falando…</string>
+    <string name="pet_speaking">Robô Felipe falando…</string>
     <string name="idle">Parado</string>
     <string name="press_to_talk">Falar</string>
     <string name="release_to_stop">Soltar</string>
     <string name="you_said">Você disse</string>
-    <string name="pet_replied">Pet respondeu</string>
+    <string name="pet_replied">Robô Felipe respondeu</string>
 </resources>

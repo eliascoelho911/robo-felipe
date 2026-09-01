@@ -41,7 +41,7 @@ class EnhancedAudioManager(private val context: Context) {
         return try {
             opusEncoder = OpusEncoder(ENCODE_SAMPLE_RATE, 1, FRAME_DURATION_MS)
             opusDecoder = OpusDecoder(DECODE_SAMPLE_RATE, 1, FRAME_DURATION_MS)
-            streamPlayer = OpusStreamPlayer(DECODE_SAMPLE_RATE, 1, FRAME_DURATION_MS, context)
+            streamPlayer = OpusStreamPlayer(DECODE_SAMPLE_RATE, 1, context)
             setupAudioRecord()
             true
         } catch (e: Exception) {
@@ -146,6 +146,8 @@ class EnhancedAudioManager(private val context: Context) {
     companion object {
         private const val TAG = "EnhancedAudioManager"
         private const val ENCODE_SAMPLE_RATE = 16000
+        // TTS do EdgeTTS no xiaozhi-server saí a 24kHz, não 16kHz — a spec
+        // prescreve 16kHz mas o servidor real usa 24kHz (assimetria do protocolo)
         private const val DECODE_SAMPLE_RATE = 24000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT

@@ -114,7 +114,7 @@ class VoiceViewModel(
         _uiState.update { it.copy(connectionState = ConnectionState.CONNECTING, errorMessage = null) }
         audioManager = EnhancedAudioManager(appContext!!).also { it.initialize() }
         observeAudioEvents()
-        webSocketManager.connect(state.serverUrl, DEVICE_ID, TOKEN)
+        webSocketManager.connect(state.serverUrl, DEVICE_ID)
     }
 
     private fun observeAudioEvents() {
@@ -130,7 +130,7 @@ class VoiceViewModel(
 
     fun startListening() {
         val state = _uiState.value
-        // Abort TTS se o pet estiver falando
+        // Abort TTS se o Robô Felipe estiver falando
         if (state.isSpeaking) {
             webSocketManager.sendAbort()
             audioManager?.stopPlaying()
@@ -168,7 +168,6 @@ class VoiceViewModel(
     companion object {
         private const val TAG = "VoiceViewModel"
         private const val DEVICE_ID = "robo-felipe-tamagotchi"
-        private const val TOKEN = ""
 
         fun factory(app: Application) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")

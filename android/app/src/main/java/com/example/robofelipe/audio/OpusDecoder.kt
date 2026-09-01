@@ -1,7 +1,5 @@
 package com.example.robofelipe.audio
 
-import android.util.Log
-
 class OpusDecoder(
     private val sampleRate: Int,
     private val channels: Int,
@@ -51,8 +49,6 @@ class OpusDecoder(
     private external fun nativeReleaseDecoder(decoderHandle: Long)
 
     companion object {
-        private const val TAG = "OpusDecoder"
-
         init {
             System.loadLibrary("app")
         }
