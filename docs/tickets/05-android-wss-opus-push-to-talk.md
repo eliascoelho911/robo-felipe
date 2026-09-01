@@ -41,6 +41,6 @@ ActionGrid), `NavigationKeys` (Nav3 órfão). **Adicionar** permissão
 - [x] TTS playback: Opus binário recebido → decode → stream ao speaker.
 - [x] `RobotCommand`, `DataRepository`, `MainScreen` (DPad/ActionGrid), `NavigationKeys` removidos.
 - [x] `MainActivity` atualizado para renderizar a nova tela de voz (placeholder — UI de pet vem no ticket 06).
-- [ ] `./gradlew test` passa (unit tests escritos; build não executado — sem Android SDK neste ambiente).
-- [ ] `./gradlew assembleDebug` builda sem erros (não executado — sem Android SDK/NDK neste ambiente).
+- [x] `./gradlew test` passa (27 testes unitários).
+- [x] `./gradlew assembleDebug` builda sem erros (NDK arm64-v8a + x86_64, CMake, prefab opus).
 - [ ] Demoable: app conecta ao xiaozhi-server (WSS), push-to-talk envia áudio, LLM responde, TTS toca no speaker (requer hardware + xiaozhi-server rodando).
