@@ -7,6 +7,7 @@ import Database from 'better-sqlite3';
 import { createActor } from 'xstate';
 import { estagioOf, type PetActor, petMachine } from './stages.js';
 import {
+  applyDeltas,
   applyStat,
   decay,
   initialStats,
@@ -73,6 +74,21 @@ export class PetStore {
   adjust(petId: string, stat: StatName, delta: number, nowMs: number): PetState {
     const current = this.load(petId, nowMs);
     const nextStats = applyStat(current.stats, stat, delta);
+    const actor = this.getActor(petId);
+    const state: PetState = {
+      petId,
+      stats: nextStats,
+      lastUpdatedMs: nowMs,
+      estagio: estagioOf(actor),
+    };
+    this.persist(state, actor.getSnapshot().context.experiencia);
+    return state;
+  }
+
+  // Aplica múltiplos deltas de uma vez (tools que mutam várias stats) e persiste.
+  mutate(petId: string, deltas: Partial<Record<StatName, number>>, nowMs: number): PetState {
+    const current = this.load(petId, nowMs);
+    const nextStats = applyDeltas(current.stats, deltas);
     const actor = this.getActor(petId);
     const state: PetState = {
       petId,

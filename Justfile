@@ -25,7 +25,7 @@ format:
 test:
     npx -y pnpm@latest -r test
 
-# Roda o Core em modo dev (Hono + MCP)
+# Roda o Core em modo dev (Hono HTTP REST)
 core-dev:
     npx -y pnpm@latest --filter core dev
 

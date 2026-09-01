@@ -9,7 +9,9 @@ import { z } from 'zod';
 // Evento detectado pela Plataforma, com timestamp e payload. Iniciais:
 // `voice`, `shake`, `button_press` (CONTEXT.md, "Trigger").
 
-export const TriggerKind = z.enum(['voice', 'shake', 'button_press']);
+// Fase 1: `voice`, `shake`, `button`, `manual`. Fase 2 adiciona `proximity`,
+// `rtc_wake` (ADR-023 §7, tabela de triggers não-vozeados).
+export const TriggerKind = z.enum(['voice', 'shake', 'button', 'manual']);
 export type TriggerKind = z.infer<typeof TriggerKind>;
 
 export const Trigger = z.object({
@@ -55,7 +57,23 @@ export const DanceAction = z.object({
 });
 export type DanceAction = z.infer<typeof DanceAction>;
 
-export const Emotion = z.enum(['happy', 'sad', 'sleepy', 'bored', 'excited']);
+// 13 moods do ADR-023 §6, derivados das stats (sem sickness nem flags
+// temporárias no MVP — só moods deriváveis de stats persistidas).
+export const Emotion = z.enum([
+  'happy',
+  'sad',
+  'sleepy',
+  'bored',
+  'excited',
+  'hungry',
+  'tired',
+  'dirty',
+  'dizzy',
+  'scared',
+  'playful',
+  'curious',
+  'mischievous',
+]);
 export type Emotion = z.infer<typeof Emotion>;
 
 export const ExpressEmotionAction = z.object({

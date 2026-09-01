@@ -1,5 +1,5 @@
 // Bootstrap do servidor do Core. Lê config do ambiente (ver .env.example)
-// e serve o app Hono via @hono/node-server.
+// e serve o app Hono (HTTP REST) via @hono/node-server.
 
 import { serve } from '@hono/node-server';
 import { createApp } from './app.js';
@@ -14,5 +14,5 @@ const store = new PetStore(dbPath);
 const app = createApp({ store, petId, corsOrigin, now: () => Date.now() });
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`Core do Robô Felipe ouvindo em http://localhost:${info.port}/mcp`);
+  console.log(`Core do Robô Felipe ouvindo em http://localhost:${info.port}`);
 });
