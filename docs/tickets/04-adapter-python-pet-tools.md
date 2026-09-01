@@ -38,14 +38,14 @@ Isto permite ao LLM moldar respostas ao estado atual sem chamar
 `/pet/:id/*`), 03 (xiaozhi-server precisa estar rodando para testar o
 adapter in-place).
 
-**Status:** ready-for-agent
+**Status:** in-review (PR #3)
 
-- [ ] `esp32-server/upstream/main/xiaozhi-server/plugins_func/functions/pet_tools.py` criado.
-- [ ] 12 tools registradas como `ToolType.SYSTEM_CTL` (2 read + 10 write).
-- [ ] Cada tool write chama Core via `httpx` e envia Ações não-verbais via `conn.websocket.send()`.
-- [ ] Cada tool read chama Core via `httpx` e retorna estado como contexto.
-- [ ] `dynamic_context` injeta estado do pet no PromptManager ao abrir conexão.
-- [ ] `pet_tools` adicionado à lista de functions no `Intent.function_call.functions` do config.
-- [ ] `httpx` adicionado às dependências do xiaozhi-server (se não já presente).
+- [x] `esp32-server/upstream/main/xiaozhi-server/plugins_func/functions/pet_tools.py` criado.
+- [x] 12 tools registradas como `ToolType.SYSTEM_CTL` (2 read + 10 write).
+- [x] Cada tool write chama Core via `httpx` e envia Ações não-verbais via `conn.websocket.send()`.
+- [x] Cada tool read chama Core via `httpx` e retorna estado como contexto.
+- [x] `dynamic_context` injeta estado do pet no PromptManager ao abrir conexão.
+- [x] `pet_tools` adicionado à lista de functions no `Intent.function_call.functions` do config.
+- [x] `httpx` já presente em `requirements.txt` (linha 17, `httpx==0.28.1`).
 - [ ] Demoable: Core + xiaozhi-server rodando; LLM chama `pet.get_state()` via function calling e recebe JSON de estado.
 - [ ] Demoable: LLM chama `pet.dance()` → adapter envia `{"type":"pet_action","action":{"type":"dance"}}` ao device (verificável no log do WebSocket) e retorna `ActionResponse(Action.REQLLM)`.
