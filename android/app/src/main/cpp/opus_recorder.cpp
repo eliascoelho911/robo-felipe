@@ -1,0 +1,66 @@
+#include <jni.h>
+#include <opus/opus.h>
+#include <stdlib.h>
+#include <android/log.h>
+
+#define TAG "OpusEncoder"
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
+
+// Encoder JNI — package com.example.robofelipe.audio.OpusEncoder
+
+JNIEXPORT jlong JNICALL
+Java_com_example_robofelipe_audio_OpusEncoder_nativeInitEncoder(
+    JNIEnv *env, jobject thiz,
+    jint sample_rate, jint channels, jint application)
+{
+    int error;
+    OpusEncoder *encoder = opus_encoder_create(sample_rate, channels, application, &error);
+    if (error != OPUS_OK || encoder == nullptr) {
+        LOGE("Failed to create encoder: %s", opus_strerror(error));
+        return 0;
+    }
+    opus_encoder_ctl(encoder, OPUS_SET_BITRATE(64000));
+    opus_encoder_ctl(encoder, OPUS_SET_COMPLEXITY(10));
+    return (jlong)(intptr_t)encoder;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_example_robofelipe_audio_OpusEncoder_nativeEncodeBytes(
+    JNIEnv *env, jobject thiz, jlong encoder_handle,
+    jbyteArray input_buffer, jint input_size,
+    jbyteArray output_buffer, jint max_output_size)
+{
+    OpusEncoder *encoder = (OpusEncoder *)(intptr_t)encoder_handle;
+    if (encoder == nullptr) {
+        LOGE("Encoder handle is null");
+        return -1;
+    }
+
+    jbyte *input = env->GetByteArrayElements(input_buffer, nullptr);
+    jbyte *output = env->GetByteArrayElements(output_buffer, nullptr);
+
+    opus_int16 *pcm = (opus_int16 *)input;
+    int frame_size = input_size / 2;
+
+    int result = opus_encode(encoder, pcm, frame_size,
+                             (unsigned char *)output, max_output_size);
+
+    env->ReleaseByteArrayElements(input_buffer, input, JNI_ABORT);
+    env->ReleaseByteArrayElements(output_buffer, output, 0);
+
+    if (result < 0) {
+        LOGE("Encoding failed: %s", opus_strerror(result));
+        return -1;
+    }
+    return result;
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_robofelipe_audio_OpusEncoder_nativeReleaseEncoder(
+    JNIEnv *env, jobject thiz, jlong encoder_handle)
+{
+    OpusEncoder *encoder = (OpusEncoder *)(intptr_t)encoder_handle;
+    if (encoder != nullptr) {
+        opus_encoder_destroy(encoder);
+    }
+}
