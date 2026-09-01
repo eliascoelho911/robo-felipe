@@ -403,3 +403,76 @@ falar "olá" ao detectar wake word, pois não há wake word).
   [`../research/tamagotchi-visao-cam.md`](../research/tamagotchi-visao-cam.md);
   config.yaml e docs/mcp-endpoint-integration.md do xiaozhi-esp32-server
   verificados em 2026-08-31 via GitHub API.
+
+## Emenda (2026-08-31)
+
+### Descoberta: MCP externo não tem `conn`
+
+A inspeção do código do `xinnan-tech/xiaozhi-esp32-server` (realizada
+durante o planejamento da implementação, 2026-08-31) revelou que o
+servidor tem **dois tipos de tools**:
+
+1. **Plugins internos Python** (`plugins_func/functions/*.py`):
+   registrados via `@register_function(name, desc, ToolType)`. Quando o
+   `ToolType` é `SYSTEM_CTL`, o plugin recebe `conn: ConnectionHandler`
+   — acesso ao WebSocket do device (fila de TTS, device-id, config,
+   logger, diálogo). É assim que plugins como `play_music` enviam TTS e
+   `call_device` controlam o device.
+2. **Servidores MCP externos** (`mcp_server_settings.json`): o
+   xiaozhi-server é **cliente MCP** — conecta a servidores externos via
+   stdio/SSE/streamable-http. **Servidores MCP externos NÃO recebem
+   `conn`** — não têm acesso ao WebSocket do device.
+
+A decisão original (§2) dizia que o Core (TS) se conectaria ao MCP
+endpoint do xiaozhi-server como servidor MCP externo. Isso **não
+funciona** para ações não-TTS (`dançar`, `expressar_emocao`,
+`ficar_tonto`): o Core não conseguiria enviar essas ações ao device,
+pois MCP externo não tem `conn`.
+
+### Solução: Core HTTP + adapter Python interno
+
+O Core é um **HTTP server** (Hono, REST), não um MCP server. Um
+**adapter Python** interno no xiaozhi-server
+(`plugins_func/functions/pet_tools.py`) registra cada tool de pet como
+`ToolType.SYSTEM_CTL`:
+
+- Chama o Core via HTTP (`httpx`) para lógica de estado (stats, decay,
+  Plano de Ações).
+- Usa `conn` para enviar ações não-verbais ao device via
+  `conn.websocket.send({"type":"pet_action","action":"dance",...})`.
+- Retorna `ActionResponse(Action.REQLLM, context, None)` — o LLM gera o
+  texto da resposta, o EdgeTTS sintetiza.
+
+O adapter Python é **permanente** (sobrevive Fase 1→Fase 2 — mesmo
+xiaozhi-server, mesmo pattern). O Core é **permanente** (pet state +
+lógica). Só o device muda (Android → CoreS3).
+
+### O que muda em cada seção
+
+- **Título**: "Core como MCP tool provider" → "Core como HTTP server +
+  adapter Python interno".
+- **§2**: O Core não conecta ao MCP endpoint. O Core é HTTP server; o
+  adapter Python no xiaozhi-server bridgeia as tools ao LLM.
+- **§3 (Arquitetura de duas fases)**: **Fase 1 = Fase 2** com Android
+  como device. O xiaozhi-server é incluído desde o início (zero código
+  throwaway). O app Android fala WSS+Opus com o xiaozhi-server e envia
+  Batch via HTTPS ao Core para triggers não-vozeados. O diagrama Fase 1
+  original (Core orquestra Nuvem direto, sem xiaozhi-server) é
+  **descartado**.
+- **§5 (Hosting)**: removida a menção a "porta WS (ex: 8004) para MCP
+  endpoint". O Core expõe HTTP na porta 3000; o adapter Python chama
+  `http://host.docker.internal:3000` de dentro do contêiner.
+- **Consequências**: "MCP nativo" → "Adapter Python interno com `conn`".
+- **Notas**: a consistência com ADR-018 ("o Core pode expor ferramentas
+  MCP") é refinada — o Core expõe ferramentas via HTTP, bridgeadas pelo
+  adapter Python.
+
+### O que NÃO muda
+
+- **Provedores** (§1): GroqASR + gpt-4o-mini + EdgeTTS + ChatGLMVLLM —
+  idênticos.
+- **Visão** (§4): `vision.url` hospedado pelo xiaozhi-server — idêntico.
+- **System prompt** (§6): persona Robô Felipe pt-BR — idêntico.
+- **selected_module**: VAD/ASR/LLM/VLLM/TTS/Memory/Intent — idênticos.
+- **Triggers não-vozeados**: sempre foram Batch→Core via HTTPS,
+  independente do padrão MCP/HTTP.

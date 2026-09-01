@@ -10,7 +10,7 @@ describe('Batch', () => {
     triggers: [
       {
         id: '6ec0bd7f-11c0-43dc-a75b-2a90c20d8b1c',
-        kind: 'voz',
+        kind: 'voice',
         timestamp: 1725000000000,
         payload: { audioRef: 'blob://...' },
       },
@@ -34,9 +34,9 @@ describe('Plano de Ações', () => {
   const plano: PlanoDeAcoes = {
     version: 1,
     batchId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-    acoes: [
-      { kind: 'falar', texto: 'Oi, Sobrinho!' },
-      { kind: 'expressar_emocao', emocao: 'feliz' },
+    actions: [
+      { kind: 'speak', text: 'Oi, Sobrinho!' },
+      { kind: 'express_emotion', emotion: 'happy' },
     ],
   };
 
@@ -45,21 +45,49 @@ describe('Plano de Ações', () => {
   });
 
   it('rejeita Plano sem Ações', () => {
-    expect(() => PlanoDeAcoes.parse({ ...plano, acoes: [] })).toThrow();
+    expect(() => PlanoDeAcoes.parse({ ...plano, actions: [] })).toThrow();
   });
 
   it('discrimina Ações por kind', () => {
-    const acoes = plano.acoes as Action[];
-    expect(acoes[0]?.kind).toBe('falar');
-    expect(acoes[1]?.kind).toBe('expressar_emocao');
+    const actions = plano.actions as Action[];
+    expect(actions[0]?.kind).toBe('speak');
+    expect(actions[1]?.kind).toBe('express_emotion');
   });
 
-  it('rejeita intensidade fora de [0,1] em ficar_tonto', () => {
+  it('rejeita intensidade fora de [0,1] em get_dizzy', () => {
     expect(() =>
       PlanoDeAcoes.parse({
         ...plano,
-        acoes: [{ kind: 'ficar_tonto', intensidade: 1.5 }],
+        actions: [{ kind: 'get_dizzy', intensity: 1.5 }],
       }),
     ).toThrow();
+  });
+
+  it('aceita sleep action', () => {
+    const withSleep = {
+      ...plano,
+      actions: [{ kind: 'sleep', durationMs: 5000 }],
+    };
+    expect(PlanoDeAcoes.parse(withSleep)).toEqual(withSleep);
+  });
+
+  it('aceita state snapshot opcional no Plano', () => {
+    const withState = {
+      ...plano,
+      state: {
+        stage: 'Filhote',
+        mood: 'brincalhão',
+        health: 80,
+        sickness: 0,
+        ageDays: 3,
+        stats: { fullness: 75 },
+        lastInteraction: 1725000000000,
+      },
+    };
+    expect(PlanoDeAcoes.parse(withState)).toEqual(withState);
+  });
+
+  it('aceita Plano sem state (opcional)', () => {
+    expect(PlanoDeAcoes.parse(plano)).toEqual(plano);
   });
 });

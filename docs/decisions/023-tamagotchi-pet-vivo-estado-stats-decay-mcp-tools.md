@@ -507,3 +507,51 @@ para estado fresco a qualquer momento.
   `src/behavior_manager.py`, `src/time_system.py`, `src/config.py`,
   `src/entities/`) e `cifertech/TamaFi` (`TamaFi/TamaFi.ino`) verificados
   em 2026-08-31 via GitHub API.
+
+## Emenda (2026-08-31)
+
+### Padrão de integração: HTTP + adapter Python (não MCP)
+
+A inspeção do código do `xinnan-tech/xiaozhi-esp32-server` (2026-08-31,
+ver ADR-022 emenda) revelou que **MCP servers externos não têm acesso ao
+`conn`** — a conexão WebSocket com o device. Sem `conn`, o Core não
+consegue enviar ações não-TTS (`dançar`, `expressar_emocao`,
+`ficar_tonto`) ao device.
+
+**Solução**: o Core é um **HTTP server** (Hono, REST). Um adapter Python
+interno no xiaozhi-server (`plugins_func/functions/pet_tools.py`)
+registra cada tool como `ToolType.SYSTEM_CTL`, chama o Core via HTTP
+para lógica de estado, e usa `conn` para enviar `pet_action` JSON ao
+device.
+
+### O que muda no §7 (Catálogo de tools)
+
+- As **12 tools** (2 read + 10 write), seus efeitos em stats, e os
+  Planos de Ações retornados **permanecem idênticos**.
+- Os nomes das tools mudam de estilo MCP (`pet.feed()`) para endpoints
+  HTTP (`POST /pet/:id/feed`). O adapter Python registra cada endpoint
+  como uma function no xiaozhi-server.
+- Tool write: adapter chama Core HTTP → recebe Plano de Ações → envia
+  ações não-verbais via `conn.websocket.send({"type":"pet_action",...})`
+  → retorna `ActionResponse(Action.REQLLM, context, None)` → LLM gera
+  texto → EdgeTTS.
+- Tool read: adapter chama Core HTTP → retorna state para o LLM como
+  contexto.
+- **Triggers não-vozeados** (§7, tabela final): **permanecem idênticos**
+  — sempre foram Batch→Core via HTTPS, não passam pelo LLM nem pelo
+  adapter.
+
+### O que muda no §9 (Integração com system prompt)
+
+O `{{dynamic_context}}` do template `agent-base-prompt.txt` é preenchido
+pelo adapter Python, que busca o state do Core via HTTP antes de cada
+turno de conversa (não pelo Core "registrando tools no MCP endpoint").
+
+### O que NÃO muda
+
+- **§1 (18 stats)**, **§2 (health + damping + sickness)**, **§3
+  (estágios sem morte)**, **§4 (Core-primary sem NVS)**, **§5 (decay
+  tiers + advanceStats on-demand)**, **§6 (13 moods)**, **§8 (UI
+  firmware)** — todas permanecem canônicas.
+- O catálogo de tools (nomes lógicos, efeitos, Planos retornados)
+  permanece — só o transporte muda (MCP → HTTP + adapter).

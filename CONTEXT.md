@@ -75,7 +75,8 @@ _Avoid_: device, cliente, app (sozinho)
 
 **Trigger**:
 Evento detectado pela Plataforma, com timestamp e payload. Iniciais:
-`voz` (áudio após a hot key), `sacudida`, `toque de botão`.
+`voice` (áudio após a hot key), `shake` (sacudida), `button_press`
+(toque de botão).
 _Avoid_: evento, input, comando
 
 **Batch**:
@@ -88,8 +89,8 @@ responde com Planos de Ações. Pode chamar a Nuvem. Ver ADR-018.
 _Avoid_: core embarcado, firmware core, backend, cérebro
 
 **Ação**:
-Efeito que a Plataforma sabe executar — `falar`, `dançar`,
-`expressar emoção`, `ficar tonto`, entre outras.
+Efeito que a Plataforma sabe executar — `speak`, `dance`,
+`express_emotion`, `get_dizzy`, `sleep`, entre outras.
 _Avoid_: comando, output
 
 **Plano de Ações**:

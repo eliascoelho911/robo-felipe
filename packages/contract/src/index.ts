@@ -7,9 +7,9 @@ import { z } from 'zod';
 
 // --- Trigger -------------------------------------------------------------
 // Evento detectado pela Plataforma, com timestamp e payload. Iniciais:
-// `voz`, `sacudida`, `toque_de_botao` (CONTEXT.md, "Trigger").
+// `voice`, `shake`, `button_press` (CONTEXT.md, "Trigger").
 
-export const TriggerKind = z.enum(['voz', 'sacudida', 'toque_de_botao']);
+export const TriggerKind = z.enum(['voice', 'shake', 'button_press']);
 export type TriggerKind = z.infer<typeof TriggerKind>;
 
 export const Trigger = z.object({
@@ -38,54 +38,81 @@ export const Batch = z.object({
 export type Batch = z.infer<typeof Batch>;
 
 // --- Ação ----------------------------------------------------------------
-// Efeito que a Plataforma sabe executar (CONTEXT.md, "Ação"): `falar`,
-// `dancar`, `expressar_emocao`, `ficar_tonto`. Discriminated union para
-// validação tipo-segura por kind.
+// Efeito que a Plataforma sabe executar (CONTEXT.md, "Ação"): `speak`,
+// `dance`, `express_emotion`, `get_dizzy`, `sleep`. Discriminated union
+// para validação tipo-segura por kind.
 
-export const FalarAction = z.object({
-  kind: z.literal('falar'),
-  texto: z.string().min(1),
+export const SpeakAction = z.object({
+  kind: z.literal('speak'),
+  text: z.string().min(1),
 });
-export type FalarAction = z.infer<typeof FalarAction>;
+export type SpeakAction = z.infer<typeof SpeakAction>;
 
-export const DancarAction = z.object({
-  kind: z.literal('dancar'),
+export const DanceAction = z.object({
+  kind: z.literal('dance'),
   // duração da dança em milissegundos
-  duracaoMs: z.number().int().positive(),
+  durationMs: z.number().int().positive(),
 });
-export type DancarAction = z.infer<typeof DancarAction>;
+export type DanceAction = z.infer<typeof DanceAction>;
 
-export const Emocao = z.enum(['feliz', 'triste', 'sonolento', 'entediado', 'animado']);
-export type Emocao = z.infer<typeof Emocao>;
+export const Emotion = z.enum(['happy', 'sad', 'sleepy', 'bored', 'excited']);
+export type Emotion = z.infer<typeof Emotion>;
 
-export const ExpressarEmocaoAction = z.object({
-  kind: z.literal('expressar_emocao'),
-  emocao: Emocao,
+export const ExpressEmotionAction = z.object({
+  kind: z.literal('express_emotion'),
+  emotion: Emotion,
 });
-export type ExpressarEmocaoAction = z.infer<typeof ExpressarEmocaoAction>;
+export type ExpressEmotionAction = z.infer<typeof ExpressEmotionAction>;
 
-export const FicarTontoAction = z.object({
-  kind: z.literal('ficar_tonto'),
+export const GetDizzyAction = z.object({
+  kind: z.literal('get_dizzy'),
   // 0..1
-  intensidade: z.number().min(0).max(1),
+  intensity: z.number().min(0).max(1),
 });
-export type FicarTontoAction = z.infer<typeof FicarTontoAction>;
+export type GetDizzyAction = z.infer<typeof GetDizzyAction>;
+
+export const SleepAction = z.object({
+  kind: z.literal('sleep'),
+  durationMs: z.number().int().positive(),
+});
+export type SleepAction = z.infer<typeof SleepAction>;
 
 export const Action = z.discriminatedUnion('kind', [
-  FalarAction,
-  DancarAction,
-  ExpressarEmocaoAction,
-  FicarTontoAction,
+  SpeakAction,
+  DanceAction,
+  ExpressEmotionAction,
+  GetDizzyAction,
+  SleepAction,
 ]);
 export type Action = z.infer<typeof Action>;
 
+// --- Pet state snapshot --------------------------------------------------
+// Estado do pet embutido no Plano de Ações para evitar round-trip extra
+// (ADR-023). Opcional — triggers simples podem não incluir.
+
+export const Stage = z.enum(['Filhote', 'Jovem', 'Adulto']);
+export type Stage = z.infer<typeof Stage>;
+
+export const PetStateSnapshot = z.object({
+  stage: Stage,
+  mood: z.string(),
+  health: z.number(),
+  sickness: z.number(),
+  ageDays: z.number(),
+  stats: z.record(z.string(), z.number()),
+  lastInteraction: z.number(),
+});
+export type PetStateSnapshot = z.infer<typeof PetStateSnapshot>;
+
 // --- Plano de Ações ------------------------------------------------------
 // Resposta do Core — lista ordenada de uma ou mais Ações (CONTEXT.md,
-// "Plano de Ações"). Referencia o batchId que originou o plano.
+// "Plano de Ações"). Referencia o batchId que originou o plano. Pode
+// incluir um snapshot do estado do pet para a UI da Plataforma.
 
 export const PlanoDeAcoes = z.object({
   version: z.literal(1),
   batchId: z.string().uuid(),
-  acoes: z.array(Action).min(1),
+  actions: z.array(Action).min(1),
+  state: PetStateSnapshot.optional(),
 });
 export type PlanoDeAcoes = z.infer<typeof PlanoDeAcoes>;

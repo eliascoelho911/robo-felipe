@@ -48,7 +48,8 @@ envia Batches ao Core e executa o Plano de Ações que volta.
 ```
 Plataforma ──Trigger──► Batch ──► Core (TS) ──Plano de Ações──► Plataforma
   (Android hoje,            │       │  ├── estado do pet (18 stats)
-   CoreS3 depois)           │       │  ├── MCP tools (catálogo ao LLM)
+   CoreS3 depois)           │       │  ├── HTTP endpoints (adapter Python
+                           │       │  │   bridgeia ao LLM do xiaozhi-server)
                            │       │  └── Nuvem (xiaozhi-esp32-server:
                            │       │      ASR/LLM/TTS pt-BR)
                            └─ o contrato Batch→Plano de Ações
@@ -80,17 +81,17 @@ ADR-023 (pet vivo), ADR-016 (sem relay).
 | `AGENTS.md` | este arquivo | ativo |
 | `CONTEXT.md` | glossário ubíquo | ativo, autoritativo |
 | `android/` | **Plataforma atual** de testes do Core (Kotlin/Compose) | ativo (ADR-018) |
-| `core/` | **Core** TypeScript (Hono + MCP + SQLite) | nasce agora |
-| `packages/contract/` | schemas Zod do Batch e Plano de Ações → JSON Schema | nasce agora |
-| `esp32-server/` | Nuvem auto-hospedada (submodule → fork xiaozhi-esp32-server) | nasce agora |
-| `firmware/` | firmware (submodule → fork 78/xiaozhi-esp32, ESP-IDF) | nasce agora |
-| `ota/` | manifestos e chaves de assinatura OTA | nasce agora |
+| `core/` | **Core** TypeScript (Hono + SQLite) | ativo |
+| `packages/contract/` | schemas Zod do Batch e Plano de Ações → JSON Schema | ativo |
+| `esp32-server/` | Nuvem auto-hospedada (submodule → fork xiaozhi-esp32-server) | ativo |
+| `firmware/` | firmware (submodule → fork 78/xiaozhi-esp32, ESP-IDF) | ativo |
+| `ota/` | manifestos e chaves de assinatura OTA | ativo |
 | `docs/decisions/` | ADRs (imutáveis) | ativo |
 | `docs/research/` | pesquisa de solução | ativo |
 | `hardware/cores3/` | capacidades e skin do CoreS3 | ativo |
 | `hardware/audio/` | BOM/esquema de áudio do WROOM (legado) | legado — GPIOs precisam remap p/ S3 |
 | `samples/` | sketches Arduino legados (hello_world, stream_mic_serial) | legado — referência |
-| `Justfile` | recipes multi-linguagem (test/build/lint) | nasce agora |
+| `Justfile` | recipes multi-linguagem (test/build/lint) | ativo |
 | `tutorial_raw/` | brutos de tutorial (~300MB) | gitignored |
 
 ## Branches = variantes de corpo
@@ -171,8 +172,12 @@ Regras detalhadas em `core/AGENTS.md`. Resumo aqui:
   função pura de timestamp, não de wall-clock com efeitos colaterais.
 - **Estágios Filhote→Jovem→Adulto** via XState v5 (transições auditáveis,
   sem morte do pet).
-- **MCP tools** expostas ao LLM como catálogo. A Nuvem é um provedor de
-  capacidades, não acoplada ao Core.
+- **Tools expostas via HTTP REST.** O Core é um HTTP server (Hono). Um
+  adapter Python interno no xiaozhi-server (`plugins_func/functions/
+  pet_tools.py`) registra cada tool como `ToolType.SYSTEM_CTL`, chama o
+  Core via HTTP, e usa `conn` para enviar ações ao device. O LLM chama
+  via function calling. A Nuvem é um provedor de capacidades, não
+  acoplada ao Core.
 - Código em inglês, comentários em pt-BR, testes em Vitest.
 
 ## Regras requeridas — OTA (ADR-020)
@@ -262,12 +267,25 @@ validação de hardware.
 
 - `android/AGENTS.md` — papel como primeira Plataforma (ADR-018), stack
   Kotlin/Compose, comandos Gradle.
-- `core/AGENTS.md` — contrato, estado cloud-primary, 18 stats, MCP
-  tools, XState, SQLite, convenções TS.
+- `core/AGENTS.md` — contrato, estado cloud-primary, 18 stats, HTTP
+  endpoints (adapter Python bridgeia ao LLM), XState, SQLite, convenções TS.
 
 Nuvem, OTA, firmware e `packages/contract/` não têm AGENTS.md próprio —
 suas regras vivem aqui. Crie um AGENTS.md aninhado só quando o
 subsistema acumular regras que mereçam isolamento (padrão xiaozhi).
+
+## Tickets (tracer-bullet slices)
+
+Tickets de implementação vivem em `.scratch/<feature-slug>/issues/`, um
+arquivo por ticket nomeado `<NN>-<slug>.md` (numerados de `01` em ordem
+de dependência, blockers primeiro). Cada ticket é um **tracer-bullet
+vertical slice** — corta todas as camadas (schema, API, UI, tests) e é
+demoable por si só. Declara `Blocked by` (tickets que devem completar
+antes) e `Status: ready-for-agent`. O template está na skill
+`/to-tickets`.
+
+Feature atual: `fase-1-core-android` (Core TS/Bun + xiaozhi-server +
+Android, 6 tickets). Fase 2 (CoreS3) inicia após o hardware chegar.
 
 ## `tutorial_raw/` é gitignored
 

@@ -147,9 +147,11 @@ com o Core (e o Core com a Nuvem), coerente com o ADR-016.
   **texto**, não áudio. No Android de hoje, TTS nativo pt-BR; no CoreS3
   depois, via protocolo `xiaozhi`. O contrato fica alto-nível
   (`falar{texto}`) para cada Plataforma escolher a renderização.
-- **Evolução natural:** o Core pode expor ferramentas MCP (o protocolo
-  tem SDK TypeScript) para integração com o `xiaozhi-esp32-server`
-  quando o CoreS3 chegar — anotado como caminho, não decidido aqui.
+- **Evolução natural:** o Core expõe ferramentas via HTTP REST; um
+  adapter Python interno no `xiaozhi-esp32-server` bridgeia as tools ao
+  LLM e envia ações ao device (ver ADR-022 emenda e ADR-023 §7 emenda).
+  O caminho MCP foi considerado e descartado — MCP servers externos não
+  têm acesso ao `conn` do device (ver ADR-022 emenda).
 - **Termos de glossário adicionados** em `CONTEXT.md`: Plataforma,
   Trigger, Batch, Core, Ação, Plano de Ações (com _Avoid_ incluindo
   "core embarcado" — o termo do rascunho original agora é evitado).

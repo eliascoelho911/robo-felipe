@@ -15,7 +15,13 @@ isso o app deve falar só o contrato, não implementar comportamento.
 - **Comportamento nunca mora aqui.** Lógica de pet, decay de stats,
   decisão do que dizer ficam no Core. O app só: (1) captura Trigger,
   (2) empacota Batch, (3) envia, (4) recebe Plano de Ações, (5) executa
-  Ações (`falar`, `expressar emoção`, etc.).
+  Ações (`speak`, `express_emotion`, etc.).
+- **Fase 1 (protótipo de laboratório)**: o app é o **device proxy** —
+  fala WSS+Opus com o `xiaozhi-server` (protocolo xiaozhi), envia Batch
+  via HTTPS ao Core para triggers não-vozeados, e executa o Plano de
+  Ações (TTS via EdgeTTS no servidor + animações de pet na UI). O
+  código de áudio/WSS é temporário (substituído pelo CoreS3 na Fase 2),
+  mas o Core e o xiaozhi-server são permanentes (zero throwaway).
 
 ## Stack
 
@@ -36,26 +42,39 @@ Módulo único `:app`, package `com.example.robofelipe`:
 app/src/
 ├── main/java/com/example/robofelipe/
 │   ├── MainActivity.kt          # entry point, host do Compose
-│   ├── Navigation.kt            # grafo de navegação (Navigation3)
-│   ├── NavigationKeys.kt
-│   ├── data/                    # RobotCommand, DataRepository
-│   ├── theme/                   # Color, Type, Theme
-│   └── ui/main/                 # MainScreen + MainScreenViewModel (MVVM)
-├── test/        # unit (MainScreenViewModelTest)
-└── androidTest/ # instrumentado (MainScreenTest)
+│   ├── audio/                   # OpusEncoder, OpusDecoder, StreamPlayer
+│   ├── network/                 # WebSocketManager (WSS xiaozhi), BatchClient (HTTPS Core)
+│   ├── data/                    # tipos do contrato (kotlinx.serialization via JSON Schema)
+│   ├── ui/pet/                  # PetFace, StatBars, animações (Compose)
+│   └── theme/                   # Color, Type, Theme
+├── test/        # unit tests
+└── androidTest/ # instrumentados
 ```
 
-Padrão **MVVM**: `ViewModel` expõe `StateFlow`, `@Composable` consome,
-`DataRepository` é a fronteira de dados. Não vaze lógica de domínio para
-o Composable — ele só renderiza estado.
+Padrão **MVVM**: `ViewModel` expõe `StateFlow`, `@Composable` consome.
+O `WebSocketManager` (WSS+Opus com o xiaozhi-server) e o `BatchClient`
+(HTTPS com o Core) são as fronteiras de dados. Não vaze lógica de
+domínio para o Composable — ele só renderiza estado.
+
+**Referência de implementação**: `xiaoniu/xiaozhi-ai-android` (48★,
+Kotlin+Compose, OkHttp+Gson) tem `audio/` (OpusEncoder/Decoder/
+StreamPlayer) e `network/WebSocketManager.kt` self-contained — usar
+como referência para portar, não forkar.
 
 ## Contrato com o Core
 
 O app consome o **contrato Batch/Plano de Ações** definido em
-`packages/contract/` (schemas Zod → JSON Schema). Gere os tipos Kotlin
-via `kotlinx.serialization` (ou quicktype) a partir do JSON Schema
-publicado pelo contrato — **não duplique** o schema à mão no app. Se o
-contrato mudar, regenere os tipos e ajuste o app.
+`packages/contract/` (schemas Zod → JSON Schema) **apenas para triggers
+n-vozeados e estado do pet** — o app envia Batch ao Core via HTTPS e
+recebe o Plano de Ações de volta. Gere os tipos Kotlin via
+`kotlinx.serialization` (ou quicktype) a partir do JSON Schema publicado
+pelo contrato — **não duplique** o schema à mão no app.
+
+Para **voz**, o app fala o **protocolo WSS do xiaozhi** (handshake hello,
+listen start/stop, Opus binary 16kHz mono 60ms, TTS de volta) com o
+`xiaozhi-server` na porta 8000 — não usa o contrato Batch/Plano. O
+`xiaozhi-server` orquestra ASR→LLM→TTS; o adapter Python interno
+bridgeia as tools do pet ao Core.
 
 ## Comandos
 

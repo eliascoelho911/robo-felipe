@@ -9,8 +9,8 @@ Robô Felipe. Para regras globais e o contrato arquitetural, leia o
 O Core recebe **Batches** (envelopes de Triggers vindos da Plataforma),
 decide o que o pet faz, e responde com um **Plano de Ações**. Ele é o
 único lugar onde **comportamento** vive — firmware e app só detectam e
-executam. O Core pode chamar a **Nuvem** (ASR/LLM/TTS) e expõe **MCP
-tools** ao LLM.
+executam. O Core pode chamar a **Nuvem** (ASR/LLM/TTS) e expõe **HTTP
+endpoints** que um adapter Python no xiaozhi-server bridgeia ao LLM.
 
 O contrato Batch→Plano de Ações é o que sobrevive à troca de host (Android
 hoje → CoreS3 amanhã). Mudar a Plataforma nunca reescreve o Core.
@@ -31,20 +31,25 @@ hoje → CoreS3 amanhã). Mudar a Plataforma nunca reescreve o Core.
   auditáveis, sem morte do pet. A máquina de estados é a fonte da
   verdade do estágio atual.
 
-## MCP tools
+## Tools (HTTP endpoints)
 
-O Core expõe um **catálogo de MCP tools** ao LLM (via
-`@modelcontextprotocol/sdk`). A Nuvem é um provedor de capacidades, não
-acoplada ao Core. Adicionar uma tool = registrar no catálogo + testar o
-contrato; não enfiar chamada de rede solta no handler de Batch.
+O Core expõe um **catálogo de tools via HTTP REST** (`GET /pet/:id/state`,
+`POST /pet/:id/feed`, etc.). Um **adapter Python** interno no
+xiaozhi-server (`plugins_func/functions/pet_tools.py`) registra cada tool
+como `ToolType.SYSTEM_CTL`, chama o Core via HTTP (`httpx`), e usa `conn`
+para enviar `pet_action` JSON ao device. O LLM chama via function
+calling; o adapter retorna `ActionResponse(Action.REQLLM)` para o LLM
+gerar texto.
+
+Por que não MCP? MCP servers externos não têm acesso ao `conn` do
+xiaozhi-server — não conseguem enviar ações não-TTS ao device (ver
+ADR-022 emenda). O adapter Python interno resolve isso. Adicionar uma
+tool = registrar um endpoint HTTP no Core + registrar a function no
+adapter; não enfiar chamada de rede solta no handler de Batch.
 
 ## Stack
 
-- **Hono** — servidor HTTP (modelado em
-  `@modelcontextprotocol/typescript-sdk/examples/hono/`).
-- **`@modelcontextprotocol/sdk`** — MCP server. Não forkar o SDK; use
-  como dependência.
-- **XState v5** — máquina de estágios do pet.
+- **Hono** — servidor HTTP (rotas REST para tools e Batch).
 - **better-sqlite3** — persistência SQLite (arquivo local, zero-config,
   MVP PC→VPS).
 - **Zod** — validação em runtime, mas os **schemas canônicos** do
@@ -61,10 +66,10 @@ core/
 ├── AGENTS.md          # este arquivo
 ├── package.json
 ├── src/
-│   ├── server.ts      # entrypoint Hono
-│   ├── pet/          # estado, stats, decay, máquina XState
-│   ├── contract/     # re-exporta de packages/contract
-│   └── mcp/          # catálogo de tools
+│   ├── app.ts         # app Hono (rotas HTTP)
+│   ├── main.ts        # bootstrap (@hono/node-server)
+│   ├── pet/           # estado, stats, decay, máquina XState
+│   └── routes/        # endpoints HTTP (tools, batch)
 ├── .env.example
 └── *.db              # SQLite (gitignored)
 ```

@@ -63,10 +63,13 @@ exit_commands:
   - "até mais"
   - "até logo"
 
-# --- Endpoint MCP do Core (ADR-018/022: Core é MCP tool provider) ---
-# O Core TS (Hono) roda no host em :3000/mcp. Acesse-o a partir do contêiner
-# via host.docker.internal (mapeado em docker-compose.override.yml).
-mcp_endpoint: ws://host.docker.internal:3000/mcp/?token=SUBSTITUA_POR_TOKEN
+# --- Integração Core ↔ xiaozhi-server (ADR-022 emenda) ---
+# O Core (TS, Hono) é um HTTP server na porta 3000 do host. Um adapter
+# Python interno (plugins_func/functions/pet_tools.py) no xiaozhi-server
+# chama o Core via HTTP (httpx) e usa conn para enviar pet_action ao device.
+# NÃO usamos mcp_endpoint — MCP servers externos não têm conn (ver ADR-022
+# emenda). O host.docker.internal é mapeado em docker-compose.override.yml.
+CORE_HTTP_URL: http://host.docker.internal:3000
 
 # --- Provedores (entradas completas para resistir a merge raso) ---
 ASR:
