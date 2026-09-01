@@ -14,15 +14,19 @@
 #   Memory= nomem (MVP sem memória de longo prazo)
 #   Intent= function_call (gpt-4o-mini suporta)
 #
-# SEGREDOS: substitua cada placeholder `SUBSTITUA_POR_...` pela chave real.
-# NUNCA commite chaves reais — considere usar `esp32-server/config/secrets.yaml`
-# (gitignored) mesclado na hora, ou variáveis de ambiente do contêiner.
+# SEGREDOS: este arquivo é versionado com placeholders `SUBSTITUA_POR_...` e
+# montado direto como `data/.config.yaml` (xiaozhi não interpola variáveis de
+# ambiente — `yaml.safe_load` lê o literal). Para rodar com chaves reais:
+#   1. copie: `cp esp32-server/config/config.yaml esp32-server/config/.config.yaml`
+#   2. preencha as chaves reais em `.config.yaml`
+#   3. troque a fonte do mount no override para `./config/.config.yaml`
+# `esp32-server/config/.gitignore` ignora `.config.yaml`, `secrets.yaml`, `.env`.
 
 # --- Módulos selecionados (sobrescreve o bloco inteiro) ---
 selected_module:
   VAD: SileroVAD
   ASR: GroqASR
-  LLM: Gpt4oMini
+  LLM: OpenAILLM
   VLLM: ChatGLMVLLM
   TTS: EdgeTTS
   Memory: nomem
@@ -50,6 +54,11 @@ end_prompt:
   prompt: |
     Despeça-se do Sobrinho de forma carinhosa e breve, como um pet que vai
     descansar, em português do Brasil.
+
+# Saudação automática do servidor ao conectar (upstream default = true). O
+# Robô Felipe só sauda quando o Core decide (Plano de Ações), não por default
+# da Nuvem — ver spec 03, Implementation Decisions.
+enable_greeting: false
 
 # --- Palavra de ativação alvo (ADR-021: "Felipe" em pt-BR) ---
 # No MVP o firmware usa push-to-talk por toque (WAKE_WORD_DISABLED); esta
@@ -81,7 +90,7 @@ ASR:
     output_dir: tmp/
 
 LLM:
-  Gpt4oMini:
+  OpenAILLM:
     type: openai
     base_url: https://api.openai.com/v1
     model_name: gpt-4o-mini
@@ -112,9 +121,11 @@ VAD:
     model_dir: models/snakers4_silero-vad
     min_silence_duration_ms: 200
 
-# --- Servidor: defina o endereço público/lan conforme o deploy (ADR-022) ---
+# --- Servidor (ADR-022) ---
+# MVP/desenvolvimento local: o Sobrinho acessa pela mesma máquina. Para
+# deploy real, troque `localhost` pelo IP/LAN ou domínio público.
 server:
-  websocket: ws://SUBSTITUA_POR_IP_OU_DOMINIO:8000/xiaozhi/v1/
-  vision_explain: http://SUBSTITUA_POR_IP_OU_DOMINIO:8003/mcp/vision/explain
+  websocket: ws://localhost:8000/xiaozhi/v1/
+  vision_explain: http://localhost:8003/mcp/vision/explain
   auth:
     enabled: false
