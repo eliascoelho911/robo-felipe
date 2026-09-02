@@ -3,9 +3,8 @@ package com.example.robofelipe.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Tipos do contrato Batch/Plano de Ações, espelhando os schemas Zod do
-// packages/contract. O Core é a fonte da verdade; estas classes apenas
-// serializam/deserializam JSON para comunicação HTTPS.
+// O Core é cloud-primary — estes tipos espelham os schemas Zod do
+// packages/contract para serializar JSON via kotlinx.serialization.
 
 @Serializable
 enum class TriggerKind {
@@ -49,8 +48,7 @@ enum class Emotion {
     mischievous,
 }
 
-// O discriminador "kind" é configurado no Json (classDiscriminator).
-// Cada subclasse usa @SerialName para o valor do discriminador.
+// Discriminador "kind" configurado no Json (classDiscriminator = "kind").
 @Serializable
 sealed class Action {
     @Serializable
@@ -108,11 +106,4 @@ data class PlanoDeAcoes(
     val batchId: String,
     val actions: List<Action>,
     val state: PetStateSnapshot? = null,
-)
-
-// Resposta de POST /pet/:id/:tool e GET /pet/:id/state — mesmo formato
-// que PetStateSnapshot, mas o endpoint de tool retorna o estado mutado.
-@Serializable
-data class MoodResponse(
-    val mood: String,
 )

@@ -155,26 +155,6 @@ fun GetDizzyAnimation(
     }
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSpiral(
-    center: Offset,
-    radius: Float,
-) {
-    val path = androidx.compose.ui.graphics.Path().apply {
-        var angle = 0f
-        var r = radius
-        moveTo(center.x + r, center.y)
-        for (i in 0..50) {
-            angle += 0.3f
-            r -= radius / 60f
-            if (r <= 0f) break
-            val x = center.x + r * kotlin.math.cos(angle)
-            val y = center.y + r * kotlin.math.sin(angle)
-            lineTo(x, y)
-        }
-    }
-    drawPath(path, Color(0xFF1A1A2E), style = androidx.compose.ui.graphics.Stroke(width = 2f))
-}
-
 // --- sleep ---------------------------------------------------------------
 @Composable
 fun SleepAnimation(

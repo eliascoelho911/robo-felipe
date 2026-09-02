@@ -1,5 +1,6 @@
 package com.example.robofelipe.data
 
+import com.example.robofelipe.network.BatchClient
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

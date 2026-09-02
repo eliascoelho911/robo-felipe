@@ -1,8 +1,9 @@
 package com.example.robofelipe.data
 
-// Camada fina sobre BatchClient — expõe operações de domínio que o
-// PetViewModel consome. Não tem estado próprio; apenas delega ao Core
-// via HTTPS.
+import com.example.robofelipe.network.BatchClient
+
+// PetViewModel consome este repositório sem saber de OkHttp nem de
+// rotas do Core — só chama operações de domínio.
 open class PetRepository(
     private val client: BatchClient = BatchClient(),
 ) {

@@ -122,7 +122,7 @@ fun PetScreen(
                 sickness = petState.sickness,
             )
 
-            // Botões de tool (cuidar do pet sem falar)
+            // Botões de tool (alimentar, brincar, sacudir)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -135,26 +135,6 @@ fun PetScreen(
                 ToolButton(
                     label = stringResource(R.string.play),
                     onClick = petViewModel::play,
-                    modifier = Modifier.weight(1f),
-                )
-                ToolButton(
-                    label = stringResource(R.string.rest),
-                    onClick = petViewModel::rest,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ToolButton(
-                    label = stringResource(R.string.clean),
-                    onClick = petViewModel::clean,
-                    modifier = Modifier.weight(1f),
-                )
-                ToolButton(
-                    label = stringResource(R.string.cuddle),
-                    onClick = petViewModel::cuddle,
                     modifier = Modifier.weight(1f),
                 )
                 ToolButton(

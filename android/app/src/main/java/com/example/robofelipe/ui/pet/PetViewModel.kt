@@ -75,22 +75,7 @@ class AndroidPetTts(context: Context) : PetTts {
     }
 }
 
-// Frases de resposta por tool — feedback TTS para botões não-vozeados.
-private val TOOL_SPEAK: Map<String, String> = mapOf(
-    "feed" to "Que delícia!",
-    "play" to "Yay! Vamos brincar!",
-    "rest" to "Boa noite...",
-    "clean" to "Tô limpinho!",
-    "cuddle" to "Que carinho!",
-    "heal" to "Obrigado!",
-    "train" to "Que legal!",
-    "dance" to "Vamos dançar!",
-    "express_emotion" to "Hmm!",
-    "get_dizzy" to "Uuuu...",
-)
-
 class PetViewModel(
-    private val appContext: Context?,
     private val repository: PetRepository,
     private val coreUrl: String,
     private val petId: String,
@@ -121,22 +106,23 @@ class PetViewModel(
         }
     }
 
-    fun feed() = callTool("feed")
-    fun play() = callTool("play")
-    fun rest() = callTool("rest")
-    fun clean() = callTool("clean")
-    fun cuddle() = callTool("cuddle")
+    fun feed() = sendManualTrigger("feed")
+    fun play() = sendManualTrigger("play")
 
-    private fun callTool(tool: String) {
+    // Botões de tool enviam manual trigger via Batch (contrato Batch→Plano).
+    // O Core não processa payload de manual triggers ainda — chamamos
+    // o tool diretamente para mutar o estado como fallback.
+    private fun sendManualTrigger(action: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
             try {
-                val state = repository.callTool(coreUrl, petId, tool)
-                applyState(state)
-                // Fala local — feedback TTS para botão não-vozeado
-                TOOL_SPEAK[tool]?.let { text ->
-                    tts?.speak(text)
-                    executeSpeakAnimation(text)
+                val plano = repository.sendManualTrigger(
+                    coreUrl, petId, platformId, mapOf("action" to action),
+                )
+                executePlano(plano)
+                if (plano.state == null) {
+                    val state = repository.callTool(coreUrl, petId, action)
+                    applyState(state)
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
@@ -280,7 +266,6 @@ class PetViewModel(
                 val config = PetConfig(context)
                 val tts = AndroidPetTts(context)
                 return PetViewModel(
-                    appContext = context,
                     repository = PetRepository(),
                     coreUrl = config.coreUrl,
                     petId = config.petId,

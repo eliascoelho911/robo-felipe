@@ -1,5 +1,11 @@
-package com.example.robofelipe.data
+package com.example.robofelipe.network
 
+import com.example.robofelipe.data.Batch
+import com.example.robofelipe.data.Emotion
+import com.example.robofelipe.data.PetStateSnapshot
+import com.example.robofelipe.data.PlanoDeAcoes
+import com.example.robofelipe.data.Trigger
+import com.example.robofelipe.data.TriggerKind
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -8,10 +14,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-
-// Cliente HTTPS para o Core: envia Batches (POST /batch), consulta estado
-// (GET /pet/:id/state), chama tools (POST /pet/:id/:tool) e busca mood
-// (GET /pet/:id/mood). O Core é cloud-primary — toda lógica de pet vive lá.
 class BatchClient(
     private val client: OkHttpClient = defaultClient,
 ) {
@@ -83,8 +85,8 @@ class BatchClient(
         }
     }
 
-    // Cria um Batch com um único Trigger do tipo manual. O platformId
-    // identifica a instância de Plataforma (Android hoje).
+    // Botões de tool na UI (alimentar, brincar) enviam manual trigger;
+    // o Core mapeia `manual` no Batch endpoint.
     fun buildManualBatch(
         petId: String,
         platformId: String,
@@ -104,7 +106,7 @@ class BatchClient(
         ),
     )
 
-    // Cria um Batch com um único Trigger do tipo button (saudação).
+    // Saudação do botão push — Core retorna `[speak{"Oi! Que bom te ver!"}]`.
     fun buildButtonBatch(
         petId: String,
         platformId: String,
@@ -122,7 +124,7 @@ class BatchClient(
         ),
     )
 
-    // Cria um Batch com um único Trigger do tipo shake.
+    // Shake do acelerômetro — Core retorna `[get_dizzy]`.
     fun buildShakeBatch(
         petId: String,
         platformId: String,

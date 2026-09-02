@@ -51,7 +51,6 @@ class PetViewModelTest {
 
     private suspend fun createViewModel(): PetViewModel {
         viewModel = PetViewModel(
-            appContext = null,
             repository = fakeRepository,
             coreUrl = "http://localhost:3000",
             petId = "felipe",
@@ -94,18 +93,34 @@ class PetViewModelTest {
         advanceUntilIdle()
 
         assertEquals(85.0, vm.uiState.value.stats["fullness"]!!, 0.01)
-        assertTrue("feed deve disparar TTS", fakeTts.spokenTexts.isNotEmpty())
-        assertEquals("Que delícia!", fakeTts.spokenTexts.last())
     }
 
     @Test
-    fun play_callsToolAndSpeaks() = runTest(testDispatcher) {
+    fun play_callsToolAndAppliesState() = runTest(testDispatcher) {
+        fakeRepository.callToolResult = sampleState(mood = "playful", fullness = 60.0)
         val vm = createViewModel()
 
         vm.play()
         advanceUntilIdle()
 
-        assertEquals("Yay! Vamos brincar!", fakeTts.spokenTexts.last())
+        assertEquals(Emotion.playful, vm.uiState.value.mood)
+        assertTrue("play não dispara TTS hardcoded", fakeTts.spokenTexts.isEmpty())
+    }
+
+    @Test
+    fun feed_sendsManualTriggerViaBatch() = runTest(testDispatcher) {
+        fakeRepository.sendBatchResult = PlanoDeAcoes(
+            version = 1,
+            batchId = "b1",
+            actions = listOf(Action.Speak("Que delícia!")),
+        )
+        fakeRepository.callToolResult = sampleState(mood = "happy", fullness = 85.0)
+        val vm = createViewModel()
+
+        vm.feed()
+        advanceUntilIdle()
+
+        assertTrue(fakeTts.spokenTexts.contains("Que delícia!"))
     }
 
     @Test
@@ -408,6 +423,16 @@ class FakePetRepository : PetRepository() {
     }
 
     override fun sendBatch(coreUrl: String, batch: com.example.robofelipe.data.Batch): PlanoDeAcoes {
+        sendBatchError?.let { throw it }
+        return sendBatchResult
+    }
+
+    override fun sendManualTrigger(
+        coreUrl: String,
+        petId: String,
+        platformId: String,
+        payload: Map<String, String>,
+    ): PlanoDeAcoes {
         sendBatchError?.let { throw it }
         return sendBatchResult
     }

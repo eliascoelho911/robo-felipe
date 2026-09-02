@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
 import com.example.robofelipe.data.Emotion
 
@@ -144,7 +145,7 @@ private fun DrawScope.drawEyeClosed(x: Float, y: Float, radius: Float) {
     drawPath(path, EyeColor, style = Stroke(width = 3f))
 }
 
-private fun DrawScope.drawSpiral(center: Offset, radius: Float) {
+internal fun DrawScope.drawSpiral(center: Offset, radius: Float) {
     val path = Path().apply {
         var angle = 0f
         var r = radius
@@ -307,19 +308,13 @@ private fun DrawScope.drawTextZ(position: Offset, size: Float) {
     drawPath(path, EyeColor, style = Stroke(width = 2f))
 }
 
-// Rotação auxiliar — DrawScope não tem rotate nativo para primitivas simples
+// Rotação do corpo para dizzy/scared — DrawScope.rotate desenha num
+// sistema de coordenadas inclinado em torno do centro.
 private fun DrawScope.rotateDegrees(degrees: Float, block: DrawScope.() -> Unit) {
     if (degrees == 0f) {
         block()
     } else {
-        // Translada para o centro, rotaciona, desenha, restaura
-        val center = Offset(size.width / 2f, size.height / 2f)
-        val rad = Math.toRadians(degrees.toDouble())
-        val cos = Math.cos(rad).toFloat()
-        val sin = Math.sin(rad).toFloat()
-        // Sem API de transform no DrawScope básico — simulamos inclinando
-        // o corpo via translação nos offsets
-        block()
+        rotate(degrees, Offset(size.width / 2f, size.height / 2f), block)
     }
 }
 
