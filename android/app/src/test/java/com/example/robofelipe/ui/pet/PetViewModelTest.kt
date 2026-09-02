@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -49,7 +50,7 @@ class PetViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private suspend fun createViewModel(): PetViewModel {
+    private suspend fun createViewModel(scope: TestScope): PetViewModel {
         viewModel = PetViewModel(
             repository = fakeRepository,
             coreUrl = "http://localhost:3000",
@@ -58,7 +59,7 @@ class PetViewModelTest {
             petActionEvents = petActionFlow.asSharedFlow(),
             tts = fakeTts,
         )
-        advanceUntilIdle()
+        scope.advanceUntilIdle()
         return viewModel
     }
 
@@ -66,7 +67,7 @@ class PetViewModelTest {
     fun loadState_appliesStateFromRepository() = runTest(testDispatcher) {
         fakeRepository.fetchStateResult = sampleState(mood = "excited", health = 90.0)
 
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         assertEquals(Emotion.excited, vm.uiState.value.mood)
         assertEquals(90.0, vm.uiState.value.stats["health"]!!, 0.01)
@@ -77,7 +78,7 @@ class PetViewModelTest {
     fun loadState_errorSetsErrorMessage() = runTest(testDispatcher) {
         fakeRepository.fetchStateError = RuntimeException("conexão recusada")
 
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         assertNotNull(vm.uiState.value.errorMessage)
         assertTrue(vm.uiState.value.errorMessage!!.contains("conexão recusada"))
@@ -87,7 +88,7 @@ class PetViewModelTest {
     fun feed_callsToolAndAppliesState() = runTest(testDispatcher) {
         fakeRepository.fetchStateResult = sampleState(mood = "happy")
         fakeRepository.callToolResult = sampleState(mood = "happy", fullness = 85.0)
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.feed()
         advanceUntilIdle()
@@ -98,7 +99,7 @@ class PetViewModelTest {
     @Test
     fun play_callsToolAndAppliesState() = runTest(testDispatcher) {
         fakeRepository.callToolResult = sampleState(mood = "playful", fullness = 60.0)
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.play()
         advanceUntilIdle()
@@ -115,7 +116,7 @@ class PetViewModelTest {
             actions = listOf(Action.Speak("Que delícia!")),
         )
         fakeRepository.callToolResult = sampleState(mood = "happy", fullness = 85.0)
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.feed()
         advanceUntilIdle()
@@ -125,7 +126,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_speakAction_triggersTtsAndSpeakAnimation() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -141,7 +142,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_danceAction_setsDanceThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -162,7 +163,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_expressEmotionAction_setsAnimationAndMood() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -178,7 +179,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_getDizzyAction_setsGetDizzyThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -196,7 +197,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_sleepAction_setsSleepThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -214,7 +215,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_appliesStateFromPlano() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val state = PetStateSnapshot(
             stage = Stage.Adulto,
             mood = "tired",
@@ -242,7 +243,7 @@ class PetViewModelTest {
 
     @Test
     fun executePlano_multipleActionsExecutesInOrder() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         val plano = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -263,7 +264,7 @@ class PetViewModelTest {
 
     @Test
     fun handlePetAction_danceEvent_setsDanceThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.handlePetAction(PetActionEvent.Dance(durationMs = 1000))
         runCurrent()
@@ -276,7 +277,7 @@ class PetViewModelTest {
 
     @Test
     fun handlePetAction_expressEmotionEvent_setsMood() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.handlePetAction(PetActionEvent.ExpressEmotion(Emotion.scared))
         advanceUntilIdle()
@@ -286,7 +287,7 @@ class PetViewModelTest {
 
     @Test
     fun handlePetAction_getDizzyEvent_setsGetDizzyThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.handlePetAction(PetActionEvent.GetDizzy(intensity = 0.9))
         runCurrent()
@@ -299,7 +300,7 @@ class PetViewModelTest {
 
     @Test
     fun handlePetAction_sleepEvent_setsSleepThenIdle() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         vm.handlePetAction(PetActionEvent.Sleep(durationMs = 3000))
         runCurrent()
@@ -313,7 +314,7 @@ class PetViewModelTest {
     @Test
     fun clearError_removesErrorMessage() = runTest(testDispatcher) {
         fakeRepository.fetchStateError = RuntimeException("erro inicial")
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         assertNotNull(vm.uiState.value.errorMessage)
 
         vm.clearError()
@@ -323,7 +324,7 @@ class PetViewModelTest {
 
     @Test
     fun sendButtonTrigger_executesPlanoFromRepository() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         fakeRepository.sendBatchResult = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -338,7 +339,7 @@ class PetViewModelTest {
 
     @Test
     fun sendShakeTrigger_executesPlanoFromRepository() = runTest(testDispatcher) {
-        val vm = createViewModel()
+        val vm = createViewModel(this)
         fakeRepository.sendBatchResult = PlanoDeAcoes(
             version = 1,
             batchId = "b1",
@@ -354,7 +355,7 @@ class PetViewModelTest {
     @Test
     fun parseMood_invalidMoodDefaultsToHappy() = runTest(testDispatcher) {
         fakeRepository.fetchStateResult = sampleState(mood = "invalid_mood")
-        val vm = createViewModel()
+        val vm = createViewModel(this)
 
         // mood inválido cai para happy (fallback de parseMood)
         assertEquals(Emotion.happy, vm.uiState.value.mood)
