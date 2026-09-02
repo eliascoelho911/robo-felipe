@@ -2,7 +2,7 @@
 
 **Ticket:** [02 — Core Batch endpoint + Plano de Ações](../tickets/02-core-batch-endpoint-plano-de-acoes.md)
 **Blocked by:** [Spec 01](01-contract-core-rest.md)
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

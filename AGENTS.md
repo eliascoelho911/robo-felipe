@@ -229,7 +229,7 @@ Reporte o que executou e o que ainda precisa de setup.
 ## Verificação por tipo de mudança
 
 A CI (ADR-024) roda em todo push/PR: jobs `ts`, `android`, `docker`,
-`docs` e `ota-manifest` em `.github/workflows/ci.yml`; releases OTA em
+`ota-manifest` em `.github/workflows/ci.yml`; releases OTA em
 tags via `.github/workflows/release.yml`. A CI não substitui a
 verificação local — rode os comandos abaixo antes de push. Após cada
 mudança, execute o que se aplica e **reporte o que verificou e

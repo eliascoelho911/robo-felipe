@@ -20,7 +20,7 @@ errar.
 
 GitHub Actions no repo principal com três artefatos:
 
-1. **`ci.yml`** — 5 jobs paralelos por stack (ts, android, docker, docs,
+1. **`ci.yml`** — 4 jobs paralelos por stack (ts, android, docker,
    ota-manifest) em todo push para `tamagotchi` e PR.
 2. **`release.yml`** — pipeline de release OTA acionada por tag `v*.*.*`:
    build do firmware no container ESP-IDF, checagem de versão, assinatura
@@ -41,25 +41,23 @@ A build de firmware em PRs comuns fica de fora — a CI do submódulo
    compile e teste em cada mudança.
 3. As a desenvolvedor, I want todo PR validar o `docker compose config`
    da Nuvem, so que um override quebrado seja pego antes do deploy local.
-4. As a desenvolvedor, I want todo PR rodar `just check-docs`, so that
-   links para arquivos removidos de branches arquivados não se acumulem.
-5. As a desenvolvedor, I want todo PR validar o `ota/manifest/manifest.json`
+4. As a desenvolvedor, I want todo PR validar o `ota/manifest/manifest.json`
    contra regras (type, semver, URLs de release), so that o pet nunca leia
    um manifest inválido.
-6. As a desenvolvedor, I want `git push` de uma tag `vX.Y.Z` disparar a
+5. As a desenvolvedor, I want `git push` de uma tag `vX.Y.Z` disparar a
    build do firmware cores3-felipe no container oficial do ESP-IDF,
    so que a release não dependa do meu ambiente local.
-7. As a desenvolvedor, I want a assinatura RSA-4096 feita com a chave
+6. As a desenvolvedor, I want a assinatura RSA-4096 feita com a chave
    vinda de um GitHub secret (nunca no repo), so que a política do
    ADR-020 seja executada sem exposição da chave privada.
-8. As a desenvolvedor, I want a release publicar `firmware.img` e
+7. As a desenvolvedor, I want a release publicar `firmware.img` e
    `filesystem.img` como assets e atualizar o manifest no branch default
    via commit validado, so que o dispositivo encontre a nova versão no
    próximo check.
-9. As a desenvolvedor, I want o release verificar que a versão do app
+8. As a desenvolvedor, I want o release verificar que a versão do app
    no binário bate com a tag, so que manifest e firmware nunca divergam.
-10. As a desenvolvedor, I want Dependabot abrir PRs semanais agrupados
-    para Actions, npm e Gradle, so que dependências não apodreçam.
+9. As a desenvolvedor, I want Dependabot abrir PRs semanais agrupados
+   para Actions, npm e Gradle, so que dependências não apodreçam.
 
 ## Implementation Decisions
 
@@ -70,7 +68,6 @@ A build de firmware em PRs comuns fica de fora — a CI do submódulo
 | `ts` | `pnpm/action-setup@v4` (lê `packageManager` do package.json) → `setup-node@v4` node 22 + cache pnpm → `pnpm install --frozen-lockfile` → `pnpm exec biome ci .` → `pnpm -r test` → `pnpm --filter contract gen` |
 | `android` | `setup-java@v4` temurin 17 → `setup-gradle@v4` → `./gradlew lint test assembleDebug --stacktrace` em `android/` |
 | `docker` | init submódulo `esp32-server/upstream` → `docker compose --project-directory esp32-server -f <base> -f <override> config > /dev/null` |
-| `docs` | instala `just` → `just check-docs` |
 | `ota-manifest` | `python3 ota/manifest/validate_manifest.py` |
 
 - **`biome ci`** (não `check`): modo CI falha em qualquer issue sem

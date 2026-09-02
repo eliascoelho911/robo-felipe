@@ -1,7 +1,7 @@
 # Spec 04: Adapter Python (pet_tools.py)
 
 **Ticket:** [04 — Adapter Python pet_tools.py](../tickets/04-adapter-python-pet-tools.md)
-**Status:** ready-for-agent
+**Status:** done
 **Blocked by:** 01 (Core HTTP REST), 03 (xiaozhi-server config)
 
 ## Problem Statement

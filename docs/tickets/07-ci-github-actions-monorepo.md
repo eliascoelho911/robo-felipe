@@ -2,12 +2,11 @@
 
 **What to build:** Workflows GitHub Actions que dão guardrails automáticos
 ao monorepo e automatizam a release OTA. O `ci.yml` roda em todo push
-para `tamagotchi` e PR com 5 jobs paralelos: `ts` (pnpm frozen-lockfile →
+para `tamagotchi` e PR com 4 jobs paralelos: `ts` (pnpm frozen-lockfile →
 `biome ci` → `pnpm -r test` → `contract gen`), `android`
 (`./gradlew lint test assembleDebug`), `docker` (`docker compose config`
-da Nuvem com submódulo `esp32-server/upstream` inicializado), `docs`
-(`just check-docs`) e `ota-manifest` (`python3
-ota/manifest/validate_manifest.py`).
+da Nuvem com submódulo `esp32-server/upstream` inicializado) e
+`ota-manifest` (`python3 ota/manifest/validate_manifest.py`).
 
 O `release.yml` roda em tag `v*.*.*`: job `build` no container
 `espressif/idf:v6.0.2` builda a board `m5stack/cores3-felipe`, confere a
@@ -30,11 +29,10 @@ semver, host/port, URLs de release) e `ota/manifest/update_manifest.py`
 
 **Status:** ready-for-agent
 
-- [ ] `.github/workflows/ci.yml` com jobs `ts`, `android`, `docker`, `docs`, `ota-manifest` (push `tamagotchi` + PR; `permissions: contents: read`).
+- [ ] `.github/workflows/ci.yml` com jobs `ts`, `android`, `docker`, `ota-manifest` (push `tamagotchi` + PR; `permissions: contents: read`).
 - [ ] Job `ts` usa `pnpm install --frozen-lockfile`, `biome ci .`, `pnpm -r test`, `pnpm --filter contract gen`.
 - [ ] Job `android` roda `./gradlew lint test assembleDebug --stacktrace` com JDK 17.
 - [ ] Job `docker` valida `docker compose config` com o submódulo `esp32-server/upstream` inicializado.
-- [ ] Job `docs` roda `just check-docs`.
 - [ ] Job `ota-manifest` roda `validate_manifest.py` e o manifest atual do repo passa.
 - [ ] `.github/workflows/release.yml` builda cores3-felipe no container `espressif/idf:v6.0.2` em tag `v*.*.*`.
 - [ ] Release confere a versão do app descriptor (magic `0xABCD5432`) contra a tag.

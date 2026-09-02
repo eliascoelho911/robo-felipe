@@ -1,7 +1,7 @@
 # Spec 01: Contract + Core REST
 
 **Ticket:** [01 — Alinhar contract + refactor Core para HTTP REST](../tickets/01-align-contract-refactor-core-http-rest.md)
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 
