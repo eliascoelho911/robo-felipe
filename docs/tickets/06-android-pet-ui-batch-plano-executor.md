@@ -34,7 +34,7 @@ do celular → `shake` trigger).
 `POST /batch` funcionando), 05 (Android WSS + Opus — precisa do app de
 voz base rodando).
 
-**Status:** in-progress
+**Status:** in-review (PR #9)
 
 - [ ] `android/app/src/main/java/com/example/robofelipe/ui/pet/` criado: `PetFace` (Canvas/ImageBitmap por mood), `StatBars` (4-5 stats principais), `PetScreen` (Scaffold com face + barras + botão push-to-talk).
 - [ ] 13 moods do ADR-023 mapeados a expressões visuais (sprites ou Canvas drawing).

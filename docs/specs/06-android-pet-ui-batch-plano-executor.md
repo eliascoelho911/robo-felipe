@@ -1,7 +1,7 @@
 # Spec 06: Android Pet UI + Batch + Plano executor
 
 **Ticket:** [06 — Android Pet UI + Batch + Plano executor](../tickets/06-android-pet-ui-batch-plano-executor.md)
-**Status:** in-progress
+**Status:** in-review (PR #9)
 **Blocked by:** 02 (Core Batch endpoint), 05 (Android WSS + Opus)
 
 ## Problem Statement
