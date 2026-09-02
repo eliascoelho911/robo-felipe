@@ -30,13 +30,13 @@ assustado, brincalhão, curioso, carinhoso, travesso, feliz).
 **Blocked by:** 01 (Alinhar contract + refactor Core HTTP REST) — precisa
 do contrato alinhado e das rotas HTTP base funcionando.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `POST /batch` implementado em `core/src/app.ts`, recebe Batch (Zod-validated via `packages/contract/`), retorna PlanoDeAções.
-- [ ] `advanceStats(elapsedSeconds)` implementado: aplica decay por tier (daily ~-15/dia, weekly ~-10/semana, monthly ~-5/mês, very-slow ~-2/mês) para cada stat, atualiza `last_tick`.
-- [ ] Trigger→Plano mapping implementado para os 3 kinds da Fase 1: `shake` → `[get_dizzy]` (ou `[express_emotion{scared}]` se courage baixo), `button` → `[speak{oi!}]`, `manual` → snapshot only (sem Actions).
-- [ ] Mood derivation implementado (13 moods, prioridade top-down do ADR-023).
-- [ ] Snapshot `state` incluído no Plano de Ações retornado.
-- [ ] Testes Vitest cobrem: Batch com 1 Trigger, Batch com múltiplos Triggers, advanceStats com elapsed=0 (no-op), elapsed grande (decay aplicado).
-- [ ] `just core-test` passa.
-- [ ] Demoable: `curl -X POST localhost:3000/batch -d '{"version":1,"batchId":"...","platformId":"android-1","petId":"test","triggers":[{"id":"...","kind":"shake","timestamp":"2026-08-31T12:00:00Z"}]}'` retorna `{"version":1,"batchId":"...","actions":[{"type":"get_dizzy"}],"state":{...}}`.
+- [x] `POST /batch` implementado em `core/src/app.ts`, recebe Batch (Zod-validated via `packages/contract/`), retorna PlanoDeAções.
+- [x] `advanceStats(elapsedSeconds)` implementado: aplica decay por tier (daily ~-15/dia, weekly ~-10/semana, monthly ~-5/mês, very-slow ~-2/mês) para cada stat, atualiza `last_tick`.
+- [x] Trigger→Plano mapping implementado para os 3 kinds da Fase 1: `shake` → `[get_dizzy]` (ou `[express_emotion{scared}]` se courage baixo), `button` → `[speak{oi!}]`, `manual` → snapshot only (sem Actions).
+- [x] Mood derivation implementado (13 moods, prioridade top-down do ADR-023).
+- [x] Snapshot `state` incluído no Plano de Ações retornado.
+- [x] Testes Vitest cobrem: Batch com 1 Trigger, Batch com múltiplos Triggers, advanceStats com elapsed=0 (no-op), elapsed grande (decay aplicado).
+- [x] `just core-test` passa.
+- [x] Demoable: `curl -X POST localhost:3000/batch -d '{"version":1,"batchId":"...","platformId":"android-1","petId":"test","triggers":[{"id":"...","kind":"shake","timestamp":"2026-08-31T12:00:00Z"}]}'` retorna `{"version":1,"batchId":"...","actions":[{"type":"get_dizzy"}],"state":{...}}`.

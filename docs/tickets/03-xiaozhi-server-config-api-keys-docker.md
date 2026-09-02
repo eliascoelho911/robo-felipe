@@ -19,13 +19,13 @@ de voz rodando e respondendo handshake.
 
 **Blocked by:** None (can start immediately, paralelo com 01).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] API keys reais preenchidas em `esp32-server/config/config.yaml` (ou via env vars no docker-compose): OpenAI (gpt-4o-mini), Groq (whisper-large-v3-turbo), ChatGLM (glm-4v-flash).
-- [ ] `docker compose -f esp32-server/docker-compose.override.yml up` sobe o xiaozhi-server sem erros.
-- [ ] Log de startup mostra: "WebSocket地址是 ws://localhost:8000/xiaozhi/v1/", "视觉分析接口是 http://localhost:8003/mcp/vision/explain".
-- [ ] `selected_module` confirma: ASR=GroqASR, LLM=OpenAILLM (gpt-4o-mini), TTS=EdgeTTS, VLLM=ChatGLMVLLM, VAD=SileroVAD, Memory=nomem, Intent=function_call.
-- [ ] System prompt persona Robô Felipe pt-BR ativo (não a default "小智" taiwanesa).
-- [ ] `exit_commands` = ["tchau", "até logo", "adeus"].
-- [ ] Demoable: `wscat ws://localhost:8000/xiaozhi/v1/` recebe handshake `{"type":"hello","transport":"websocket","session_id":"..."}`.
-- [ ] Demoable: enviar áudio Opus (push-to-talk) recebe transcrição + resposta TTS (validação manual com cliente de teste).
+- [x] API keys reais preenchidas em `esp32-server/config/config.yaml` (ou via env vars no docker-compose): OpenAI (gpt-4o-mini), Groq (whisper-large-v3-turbo), ChatGLM (glm-4v-flash).
+- [x] `docker compose -f esp32-server/docker-compose.override.yml up` sobe o xiaozhi-server sem erros.
+- [x] Log de startup mostra: "WebSocket地址是 ws://localhost:8000/xiaozhi/v1/", "视觉分析接口是 http://localhost:8003/mcp/vision/explain".
+- [x] `selected_module` confirma: ASR=GroqASR, LLM=OpenAILLM (gpt-4o-mini), TTS=EdgeTTS, VLLM=ChatGLMVLLM, VAD=SileroVAD, Memory=nomem, Intent=function_call.
+- [x] System prompt persona Robô Felipe pt-BR ativo (não a default "小智" taiwanesa).
+- [x] `exit_commands` = ["tchau", "até logo", "adeus"].
+- [x] Demoable: `wscat ws://localhost:8000/xiaozhi/v1/` recebe handshake `{"type":"hello","transport":"websocket","session_id":"..."}`.
+- [x] Demoable: enviar áudio Opus (push-to-talk) recebe transcrição + resposta TTS (validação manual com cliente de teste).

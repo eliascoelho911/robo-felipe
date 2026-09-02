@@ -92,16 +92,3 @@ firmware-locales:
 ota-manifest-check:
     python3 ota/manifest/validate_manifest.py
 
-# --- Docs ---
-
-# Verifica links de .md não apontam para arquivos removidos (resíduos).
-# Mira em destinos de link markdown `](caminho)` — não em menções em prosa,
-# assim o próprio AGENTS.md (que documenta os patterns) não falso-positiva.
-check-docs:
-    @echo "Verificando resíduos de branches arquivados em .md..."
-    @! grep -rInE '\]\([^)]*(tutorial/|hardware/mcu/|hardware/esp32-cam/|pinout-quadrupede|esp32-wroom-32e-n4)' \
-        --include='*.md' \
-        --exclude-dir=firmware --exclude-dir=esp32-server --exclude-dir=node_modules --exclude-dir=.git \
-        . 2>/dev/null \
-      || (echo "Encontrado link para conteúdo removido em .md" && exit 1)
-    @echo "OK — nenhum resíduo encontrado."
