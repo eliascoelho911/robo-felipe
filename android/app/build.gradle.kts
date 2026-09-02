@@ -106,4 +106,7 @@ dependencies {
   implementation(libs.okhttp)
   implementation(libs.gson)
   implementation(libs.opus.v131)
+
+  // Serialization (contrato Batch/Plano)
+  implementation(libs.kotlinx.serialization.json)
 }

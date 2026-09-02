@@ -14,4 +14,15 @@
     <string name="release_to_stop">Soltar</string>
     <string name="you_said">Você disse</string>
     <string name="pet_replied">Robô Felipe respondeu</string>
+    <string name="config">Configuração</string>
+    <string name="core_url">URL do Core (HTTP)</string>
+    <string name="xiaozhi_url">URL do xiaozhi-server (WSS)</string>
+    <string name="pet_id">ID do Pet</string>
+    <string name="save">Salvar</string>
+    <string name="feed">Alimentar</string>
+    <string name="play">Brincar</string>
+    <string name="rest">Descansar</string>
+    <string name="clean">Limpar</string>
+    <string name="cuddle">Abraçar</string>
+    <string name="shake">Sacudir</string>
 </resources>

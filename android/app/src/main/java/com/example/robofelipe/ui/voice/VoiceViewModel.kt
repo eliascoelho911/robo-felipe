@@ -8,12 +8,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.robofelipe.audio.AudioEvent
 import com.example.robofelipe.audio.EnhancedAudioManager
+import com.example.robofelipe.data.Emotion
+import com.example.robofelipe.data.PetActionEvent
+import com.example.robofelipe.data.PetConfig
 import com.example.robofelipe.network.WebSocketEvent
 import com.example.robofelipe.network.WebSocketManager
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
@@ -43,6 +49,10 @@ class VoiceViewModel(
 
     private val _uiState = MutableStateFlow(VoiceUiState())
     val uiState: StateFlow<VoiceUiState> = _uiState.asStateFlow()
+
+    // Eventos de pet_action (xiaozhi-server → WSS → PetViewModel dispara animação)
+    private val _petActionEvents = MutableSharedFlow<PetActionEvent>(extraBufferCapacity = 10)
+    val petActionEvents: SharedFlow<PetActionEvent> = _petActionEvents.asSharedFlow()
 
     init {
         observeWebSocketEvents()
@@ -100,8 +110,36 @@ class VoiceViewModel(
                     else -> {}
                 }
             }
-            "pet_action" -> Log.d(TAG, "pet_action recebido (handler no spec 06): $text")
+            "pet_action" -> handlePetAction(json)
             else -> {}
+        }
+    }
+
+    // pet_action do xiaozhi-server (adapter Python) — extrai action e emite
+    // evento para o PetViewModel disparar a animação correspondente.
+    internal fun handlePetAction(json: JsonObject) {
+        val action = json.getAsJsonObject("action") ?: return
+        val type = action.get("type")?.asString ?: return
+        val event = when (type) {
+            "dance" -> PetActionEvent.Dance(
+                durationMs = action.get("duration_ms")?.asLong ?: 3000L,
+            )
+            "express_emotion" -> {
+                val emotionStr = action.get("emotion")?.asString ?: "happy"
+                val emotion = runCatching { Emotion.valueOf(emotionStr) }
+                    .getOrDefault(Emotion.happy)
+                PetActionEvent.ExpressEmotion(emotion)
+            }
+            "get_dizzy" -> PetActionEvent.GetDizzy(
+                intensity = action.get("intensity")?.asDouble ?: 0.5,
+            )
+            "sleep" -> PetActionEvent.Sleep(
+                durationMs = action.get("duration_ms")?.asLong ?: 5000L,
+            )
+            else -> null
+        }
+        if (event != null) {
+            viewModelScope.launch { _petActionEvents.emit(event) }
         }
     }
 
@@ -171,8 +209,12 @@ class VoiceViewModel(
 
         fun factory(app: Application) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                VoiceViewModel(app.applicationContext, WebSocketManager()) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val config = PetConfig(app.applicationContext)
+                val vm = VoiceViewModel(app.applicationContext, WebSocketManager())
+                vm.updateServerUrl(config.xiaozhiUrl)
+                return vm as T
+            }
         }
     }
 }
