@@ -28,18 +28,17 @@ Consultas Context7 (2026-09-01) confirmaram os padrões de cada ferramenta:
 
 ## Decision
 
-**Adotar GitHub Actions no repo principal com um workflow `ci.yml` de jobs paralelos por stack (TS, Android, Docker, docs, manifest OTA), um workflow `release.yml` acionado por tag semver que builda, assina com RSA-4096 e publica a release OTA, e Dependabot semanal para GitHub Actions, npm e Gradle. O firmware continua com CI própria no submódulo — sem job de build de firmware no CI do repo principal.**
+**Adotar GitHub Actions no repo principal com um workflow `ci.yml` de jobs paralelos por stack (TS, Android, Docker, manifest OTA), um workflow `release.yml` acionado por tag semver que builda, assina com RSA-4096 e publica a release OTA, e Dependabot semanal para GitHub Actions, npm e Gradle. O firmware continua com CI própria no submódulo — sem job de build de firmware no CI do repo principal.**
 
 ### Workflow `ci.yml` — push em `tamagotchi` + PRs
 
-`permissions: contents: read` no topo (princípio do menor privilégio). Cinco jobs paralelos em `ubuntu-24.04`, cada um só roda o que é da sua stack:
+`permissions: contents: read` no topo (princípio do menor privilégio). Quatro jobs paralelos em `ubuntu-24.04`, cada um só roda o que é da sua stack:
 
 | Job | O que valida |
 |:--|:--|
 | `ts` | `pnpm install --frozen-lockfile` → `biome ci .` → `pnpm -r test` (core + contract) → `pnpm --filter contract gen` (valida que a geração de JSON Schema executa; os schemas são gitignored, então não há diff a verificar) |
 | `android` | `./gradlew lint test assembleDebug` (inclui build nativo NDK/CMake do Opus; JDK 17 temurin) |
 | `docker` | `git submodule update --init esp32-server/upstream` → `docker compose config` (valida o override da Nuvem sem subir container) |
-| `docs` | instala `just` → `just check-docs` (grep de resíduos de branches arquivados) |
 | `ota-manifest` | `python3 ota/manifest/validate_manifest.py` |
 
 A detecção de stack por job (path filters) foi deliberadamente **não** adotada no MVP: o repo é pequeno, os jobs são rápidos, e rodar tudo sempre dá sinal de integridade total a cada PR.

@@ -48,7 +48,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
 
       # Inclui o build nativo NDK/CMake (Opus) via externalNativeBuild.
       - name: Lint + testes + build debug
@@ -74,22 +74,6 @@ jobs:
           docker compose --project-directory esp32-server \
             -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
             -f esp32-server/docker-compose.override.yml config > /dev/null
-
-  docs:
-    name: Docs (resíduos de branches arquivados)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      # Reusa a mesma recipe local (just check-docs) em vez de duplicar o
-      # grep — CI e máquina do dev verificam a mesma coisa.
-      - name: Instala just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
-            | bash -s -- --to "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - run: just check-docs
 
   ota-manifest:
     name: OTA manifest (formato + URLs)

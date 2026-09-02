@@ -1,7 +1,7 @@
 # Spec 03: xiaozhi-server config + API keys + docker
 
 **Ticket:** [03 — xiaozhi-server config + API keys + docker](../tickets/03-xiaozhi-server-config-api-keys-docker.md)
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

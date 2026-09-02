@@ -1,7 +1,7 @@
 # Spec 05: Android WSS + Opus + push-to-talk
 
 **Ticket:** [05 — Android WSS + Opus + push-to-talk](../tickets/05-android-wss-opus-push-to-talk.md)
-**Status:** ready-for-agent
+**Status:** done
 **Blocked by:** 03 (xiaozhi-server rodando), 04 (adapter Python com pet tools)
 
 ## Problem Statement
