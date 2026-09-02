@@ -27,14 +27,14 @@ persiste e retorna o snapshot de estado.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `core/src/pet/stats.ts` refatorado: 17 stats com nomes do ADR-023, `health` derivado pela fórmula acima, decay function pura por timestamp preservada.
-- [ ] `packages/contract/src/index.ts` alinhado: `Emotion` enum com 13 moods do ADR-023 (`happy`, `sad`, `sleepy`, `bored`, `excited`, `hungry`, `tired`, `dirty`, `dizzy`, `scared`, `playful`, `curious`, `mischievous`); `TriggerKind` com `voice`, `shake`, `button`, `manual` (Fase 1); `version` field mantido (não `schema_version`).
-- [ ] `core/src/app.ts` refatorado: remove `WebStandardStreamableHTTPServerTransport`/MCP SDK, adiciona rotas HTTP REST (Hono) para as 12 tools + `GET /pet/:id/state`.
-- [ ] `core/src/mcp/` removido (incluindo `tools.ts`).
-- [ ] `@modelcontextprotocol/sdk` removido de `core/package.json` dependencies.
-- [ ] Testes Vitest em `core/src/pet/stats.test.ts` atualizados para os novos nomes de stats e fórmula de health.
-- [ ] `just core-test` passa.
-- [ ] Demoable: `curl localhost:3000/pet/test/state` retorna JSON com as 18 stats do ADR-023.
-- [ ] Demoable: `curl -X POST localhost:3000/pet/test/feed` muta `fullness` e retorna snapshot com `health` recalculado.
+- [x] `core/src/pet/stats.ts` refatorado: 17 stats com nomes do ADR-023, `health` derivado pela fórmula acima, decay function pura por timestamp preservada.
+- [x] `packages/contract/src/index.ts` alinhado: `Emotion` enum com 13 moods do ADR-023 (`happy`, `sad`, `sleepy`, `bored`, `excited`, `hungry`, `tired`, `dirty`, `dizzy`, `scared`, `playful`, `curious`, `mischievous`); `TriggerKind` com `voice`, `shake`, `button`, `manual` (Fase 1); `version` field mantido (não `schema_version`).
+- [x] `core/src/app.ts` refatorado: remove `WebStandardStreamableHTTPServerTransport`/MCP SDK, adiciona rotas HTTP REST (Hono) para as 12 tools + `GET /pet/:id/state`.
+- [x] `core/src/mcp/` removido (incluindo `tools.ts`).
+- [x] `@modelcontextprotocol/sdk` removido de `core/package.json` dependencies.
+- [x] Testes Vitest em `core/src/pet/stats.test.ts` atualizados para os novos nomes de stats e fórmula de health.
+- [x] `just core-test` passa.
+- [x] Demoable: `curl localhost:3000/pet/test/state` retorna JSON com as 18 stats do ADR-023.
+- [x] Demoable: `curl -X POST localhost:3000/pet/test/feed` muta `fullness` e retorna snapshot com `health` recalculado.

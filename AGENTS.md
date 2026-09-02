@@ -220,7 +220,6 @@ diretos quando existir.
 | Regenerar locales | `python3 scripts/gen_lang.py` | `firmware/` |
 | Nuvem (local) | `docker compose -f esp32-server/docker-compose.override.yml up` | raiz |
 | Validar manifest OTA | `just ota-manifest-check` | raiz |
-| Verificar links .md | `just check-docs` | raiz |
 
 Se um comando não existe ainda (firmware ESP-IDF não configurado neste
 repo, Nuvem sem `docker compose` inicializado), **não finja que rodou**.
@@ -295,6 +294,28 @@ code snippets. O template está na skill `/to-spec`.
 Cada spec referencia seu ticket correspondente em `docs/tickets/` pelo
 número. Specs são a fonte da verdade para o agente que implementa o
 ticket.
+
+### Status de specs e tickets
+
+Cada spec e cada ticket tem um campo `**Status:**`. Mantenha-o
+atualizado conforme a implementação progride — um status desatualizado
+é pior que nenhum. Status disponíveis:
+
+| Status | Significado |
+|:---|:---|
+| `draft` | em elaboração, ainda não pronto para implementação |
+| `ready-for-agent` | pronto para um agente implementar |
+| `in-progress` | implementação em andamento |
+| `in-review` | PR aberto, aguardando review |
+| `done` | implementado, verificado e mergeado |
+
+Transições típicas: ao pegar um ticket `ready-for-agent`, mova para
+`in-progress`; ao abrir PR, para `in-review` (anote o número entre
+parênteses, ex.: `in-review (PR #3)`); ao mergear e verificar, para
+`done`. Anote bloqueios externos entre parênteses, ex.:
+`ready-for-agent (aguarda hardware CoreS3 — Fase 2)`. O status do
+ticket e da spec correspondente devem refletir a mesma fase da
+implementação.
 
 ## Tickets (tracer-bullet slices)
 

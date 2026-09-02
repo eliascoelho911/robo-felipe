@@ -27,21 +27,21 @@ semver, host/port, URLs de release) e `ota/manifest/update_manifest.py`
 
 **Blocked by:** (nenhum)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `.github/workflows/ci.yml` com jobs `ts`, `android`, `docker`, `ota-manifest` (push `tamagotchi` + PR; `permissions: contents: read`).
-- [ ] Job `ts` usa `pnpm install --frozen-lockfile`, `biome ci .`, `pnpm -r test`, `pnpm --filter contract gen`.
-- [ ] Job `android` roda `./gradlew lint test assembleDebug --stacktrace` com JDK 17.
-- [ ] Job `docker` valida `docker compose config` com o submódulo `esp32-server/upstream` inicializado.
-- [ ] Job `ota-manifest` roda `validate_manifest.py` e o manifest atual do repo passa.
-- [ ] `.github/workflows/release.yml` builda cores3-felipe no container `espressif/idf:v6.0.2` em tag `v*.*.*`.
-- [ ] Release confere a versão do app descriptor (magic `0xABCD5432`) contra a tag.
-- [ ] Release assina `firmware.bin` e `generated_assets.bin` com `OTA_RSA_PRIVATE_KEY` e publica `firmware.img`/`filesystem.img` como assets.
-- [ ] Release atualiza `ota/manifest/manifest.json` via `update_manifest.py` (valida antes de escrever) e commita no branch default.
-- [ ] `.github/dependabot.yml` com 3 entradas semanais agrupadas (github-actions, npm com directories, gradle).
-- [ ] `ota/manifest/validate_manifest.py` e `update_manifest.py` stdlib-only, validados localmente.
-- [ ] Recipe `just ota-manifest-check` no Justfile.
-- [ ] ADR-024 em `docs/decisions/` seguindo o formato dos existentes.
-- [ ] AGENTS.md atualizado: mapa com `.github/`, referência ao ADR-024, seção Verificação sem o "Não há CI automatizado".
-- [ ] Demoable: abrir um PR que quebre um teste vitest → CI fica vermelho no job `ts`; editar o manifest com URL errada → job `ota-manifest` falha.
-- [ ] Demoable (requer secret): push de tag `vX.Y.Z` com `OTA_RSA_PRIVATE_KEY` configurado → Release criada com assets assinados e manifest atualizado no branch default.
+- [x] `.github/workflows/ci.yml` com jobs `ts`, `android`, `docker`, `ota-manifest` (push `tamagotchi` + PR; `permissions: contents: read`).
+- [x] Job `ts` usa `pnpm install --frozen-lockfile`, `biome ci .`, `pnpm -r test`, `pnpm --filter contract gen`.
+- [x] Job `android` roda `./gradlew lint test assembleDebug --stacktrace` com JDK 17.
+- [x] Job `docker` valida `docker compose config` com o submódulo `esp32-server/upstream` inicializado.
+- [x] Job `ota-manifest` roda `validate_manifest.py` e o manifest atual do repo passa.
+- [x] `.github/workflows/release.yml` builda cores3-felipe no container `espressif/idf:v6.0.2` em tag `v*.*.*`.
+- [x] Release confere a versão do app descriptor (magic `0xABCD5432`) contra a tag.
+- [x] Release assina `firmware.bin` e `generated_assets.bin` com `OTA_RSA_PRIVATE_KEY` e publica `firmware.img`/`filesystem.img` como assets.
+- [x] Release atualiza `ota/manifest/manifest.json` via `update_manifest.py` (valida antes de escrever) e commita no branch default.
+- [x] `.github/dependabot.yml` com 3 entradas semanais agrupadas (github-actions, npm com directories, gradle).
+- [x] `ota/manifest/validate_manifest.py` e `update_manifest.py` stdlib-only, validados localmente.
+- [x] Recipe `just ota-manifest-check` no Justfile.
+- [x] ADR-024 em `docs/decisions/` seguindo o formato dos existentes.
+- [x] AGENTS.md atualizado: mapa com `.github/`, referência ao ADR-024, seção Verificação sem o "Não há CI automatizado".
+- [x] Demoable: abrir um PR que quebre um teste vitest → CI fica vermelho no job `ts`; editar o manifest com URL errada → job `ota-manifest` falha.
+- [x] Demoable (requer secret): push de tag `vX.Y.Z` com `OTA_RSA_PRIVATE_KEY` configurado → Release criada com assets assinados e manifest atualizado no branch default.

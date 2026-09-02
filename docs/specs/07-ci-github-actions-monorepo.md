@@ -1,7 +1,7 @@
 # Spec 07: CI com GitHub Actions no monorepo
 
 **Ticket:** [07 — CI com GitHub Actions no monorepo](../tickets/07-ci-github-actions-monorepo.md)
-**Status:** ready-for-agent
+**Status:** done
 **Blocked by:** (nenhum — infraestrutura independente das features da fase-1)
 
 ## Problem Statement
