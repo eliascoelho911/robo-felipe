@@ -66,7 +66,7 @@ fun StatBars(
 @Composable
 private fun StatBarRow(display: StatDisplay) {
     val progress by animateFloatAsState(
-        targetValue = (display.value / 100f).coerceIn(0f, 1f),
+        targetValue = (display.value / 100.0).toFloat().coerceIn(0f, 1f),
         animationSpec = tween(400),
         label = "stat_${display.label}",
     )
