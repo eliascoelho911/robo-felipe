@@ -84,6 +84,8 @@ core/.env
 packages/contract/schemas/
 # Cache do pnpm
 .pnpm-store/
+# Cache incremental do tsc — regenerado a cada build, nunca versionado
+*.tsbuildinfo
 
 # ---------- Nuvem (xiaozhi-esp32-server, ADR-022) ----------
 # Segredos ficam fora do repo (separado do config.yaml de placeholders).
