@@ -43,7 +43,7 @@ app/src/
 ├── main/java/com/example/robofelipe/
 │   ├── MainActivity.kt          # entry point, host do Compose
 │   ├── audio/                   # OpusEncoder, OpusDecoder, StreamPlayer
-│   ├── network/                 # WebSocketManager (WSS xiaozhi), BatchClient (HTTPS Core)
+│   ├── network/                 # WebSocketManager (WSS xiaozhi), CoreApiClient (HTTPS Core)
 │   ├── data/                    # tipos do contrato (kotlinx.serialization via JSON Schema)
 │   ├── ui/pet/                  # PetFace, StatBars, animações (Compose)
 │   └── theme/                   # Color, Type, Theme
@@ -52,7 +52,7 @@ app/src/
 ```
 
 Padrão **MVVM**: `ViewModel` expõe `StateFlow`, `@Composable` consome.
-O `WebSocketManager` (WSS+Opus com o xiaozhi-server) e o `BatchClient`
+O `WebSocketManager` (WSS+Opus com o xiaozhi-server) e o `CoreApiClient`
 (HTTPS com o Core) são as fronteiras de dados. Não vaze lógica de
 domínio para o Composable — ele só renderiza estado.
 

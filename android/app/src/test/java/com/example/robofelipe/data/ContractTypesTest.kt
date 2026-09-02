@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ContractTypesTest {
-    // Mesma config do BatchClient — discriminador "kind" para a sealed class Action
+    // Mesma config do CoreApiClient — discriminador "kind" para a sealed class Action
     private val json = Json {
         classDiscriminator = "kind"
         ignoreUnknownKeys = true

@@ -14,7 +14,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-class BatchClient(
+class CoreApiClient(
     private val client: OkHttpClient = defaultClient,
 ) {
     private val json = Json {
