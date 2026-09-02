@@ -7,8 +7,8 @@
 #
 # Provedores definidos no ADR-022:
 #   ASR   = GroqASR (whisper-large-v3-turbo)
-#   LLM   = gpt-4o-mini (OpenAI)
-#   VLLM  = ChatGLMVLLM (glm-4v-flash)  — visão (câmera GC0308, ADR-017)
+#   LLM   = OpenAILLM via OpenRouter (openai/gpt-4o-mini)
+#   VLLM  = OpenAIVLLM via OpenRouter (openai/gpt-4o-mini)  — visão (câmera GC0308, ADR-017)
 #   TTS   = EdgeTTS (pt-BR-FranciscaNeural)
 #   VAD   = SileroVAD
 #   Memory= nomem (MVP sem memória de longo prazo)
@@ -27,7 +27,7 @@ selected_module:
   VAD: SileroVAD
   ASR: GroqASR
   LLM: OpenAILLM
-  VLLM: ChatGLMVLLM
+  VLLM: OpenAIVLLM
   TTS: EdgeTTS
   Memory: nomem
   Intent: function_call
@@ -78,7 +78,7 @@ exit_commands:
 # chama o Core via HTTP (httpx) e usa conn para enviar pet_action ao device.
 # NÃO usamos mcp_endpoint — MCP servers externos não têm conn (ver ADR-022
 # emenda). O host.docker.internal é mapeado em docker-compose.override.yml.
-CORE_HTTP_URL: http://host.docker.internal:3000
+CORE_HTTP_URL: http://host.docker.internal:8090
 
 # --- Intent: function_call (sobrescreve o bloco inteiro do upstream) ---
 # Adiciona pet_tools à lista de functions do function_call. O merge do
@@ -108,20 +108,20 @@ ASR:
 LLM:
   OpenAILLM:
     type: openai
-    base_url: https://api.openai.com/v1
-    model_name: gpt-4o-mini
-    api_key: SUBSTITUA_POR_OPENAI_API_KEY
+    base_url: https://openrouter.ai/api/v1
+    model_name: openai/gpt-4o-mini
+    api_key: SUBSTITUA_POR_OPENROUTER_API_KEY
     temperature: 0.7
     max_tokens: 500
     top_p: 1
     frequency_penalty: 0
 
 VLLM:
-  ChatGLMVLLM:
+  OpenAIVLLM:
     type: openai
-    model_name: glm-4v-flash
-    url: https://open.bigmodel.cn/api/paas/v4/
-    api_key: SUBSTITUA_POR_CHATGLM_API_KEY
+    model_name: openai/gpt-4o-mini
+    url: https://openrouter.ai/api/v1
+    api_key: SUBSTITUA_POR_OPENROUTER_API_KEY
 
 TTS:
   EdgeTTS:

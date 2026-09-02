@@ -16,7 +16,7 @@
 # o servidor falharia ao ler a config.
 #
 # O que este override faz:
-#  1. Monta `config/config.yaml` como `data/.config.yaml` (somente leitura)
+#  1. Monta `config/.config.yaml` (gitignored) como `data/.config.yaml`
 #     dentro do contêiner — o servidor lê este arquivo e faz merge sobre o
 #     config.yaml do upstream, aplicando a configuração pt-BR do Robô Felipe.
 #  2. Ajusta o fuso para America/Sao_Paulo (pt-BR).
@@ -24,8 +24,9 @@
 #     alcance o Core (Hono) rodando no host em :3000 (ver CORE_HTTP_URL em
 #     config/config.yaml).
 #
-# SEGREDOS: para rodar com chaves reais, troque a fonte do mount abaixo por
-# `./config/.config.yaml` (gitignored; ver cabeçalho de config/config.yaml).
+# SEGREDOS: o mount abaixo usa `./config/.config.yaml` (gitignored). Copie
+# `config/config.yaml` para `.config.yaml` e preencha as chaves reais lá;
+# o versionado segue só com placeholders.
 #
 # OBS: o base ainda monta `./models/SenseVoiceSmall/model.pt` (necessário só
 # para FunASR local). Como usamos GroqASR (nuvem), esse mount não afeta o
@@ -35,7 +36,14 @@ services:
   xiaozhi-esp32-server:
     environment:
       - TZ=America/Sao_Paulo
+    # !override substitui a lista de ports do base (8000:8000/8003:8003):
+    # sem isso o merge do compose acumularia as entradas em vez de trocá-las.
+    # A porta WSS do host é fixa em 8091; dentro do contêiner o servidor
+    # continua na 8000 (config/config.yaml não muda).
+    ports: !override
+      - "8091:8000"
+      - "8003:8003"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./config/config.yaml:/opt/xiaozhi-esp32-server/data/.config.yaml:ro
+      - ./config/.config.yaml:/opt/xiaozhi-esp32-server/data/.config.yaml:ro

@@ -32,8 +32,8 @@ class PetConfig(context: Context) {
         private const val KEY_PET_ID = "pet_id"
         private const val KEY_PLATFORM_ID = "platform_id"
 
-        const val DEFAULT_CORE_URL = "http://192.168.1.100:3000"
-        const val DEFAULT_XIAOZHI_URL = "ws://192.168.1.100:8000/xiaozhi/v1/"
+        const val DEFAULT_CORE_URL = "http://192.168.1.100:8090"
+        const val DEFAULT_XIAOZHI_URL = "ws://192.168.1.100:8091/xiaozhi/v1/"
         const val DEFAULT_PET_ID = "felipe"
         const val DEFAULT_PLATFORM_ID = "android-robo-felipe"
     }

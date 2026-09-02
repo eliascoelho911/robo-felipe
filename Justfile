@@ -25,9 +25,10 @@ format:
 test:
     npx -y pnpm@latest -r test
 
-# Roda o Core em modo dev (Hono HTTP REST)
-core-dev:
-    npx -y pnpm@latest --filter core dev
+# Roda o Core em modo dev (Hono HTTP REST). Padrão :8090; customizável
+# com `just core-dev <porta>`.
+core-dev port="8090":
+    CORE_PORT={{port}} npx -y pnpm@latest --filter core dev
 
 # Testa só o Core
 core-test:
@@ -55,6 +56,14 @@ android-build:
 android-lint:
     cd android && ./gradlew lint
 
+# Builda e instala o app no device/emulador conectado (adb detecta via Gradle)
+android-install:
+    cd android && ./gradlew installDebug
+
+# Lista os devices/emuladores conectados
+android-devices:
+    adb devices
+
 # --- Nuvem (xiaozhi-esp32-server, Docker) ---
 
 # Sobe a Nuvem local (base do upstream + override de config pt-BR).
@@ -72,6 +81,18 @@ esp32-server-check:
     docker compose --project-directory esp32-server \
                    -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
                    -f esp32-server/docker-compose.override.yml config
+
+# Para a Nuvem e remove contêineres (redes/volumes nomeados preservados).
+esp32-server-down:
+    docker compose --project-directory esp32-server \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+                   -f esp32-server/docker-compose.override.yml down
+
+# Recria a Nuvem: down + up, forçando recriação dos contêineres
+# (útil após mudar o override ou a config montada).
+esp32-server-recreate:
+    just esp32-server-down
+    just esp32-server-up
 
 # --- Firmware (ESP-IDF, dentro de firmware/) ---
 

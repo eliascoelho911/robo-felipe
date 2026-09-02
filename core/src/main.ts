@@ -5,7 +5,7 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app.js';
 import { PetStore } from './pet/store.js';
 
-const port = Number(process.env.CORE_PORT ?? 3000);
+const port = Number(process.env.CORE_PORT ?? 8090);
 const dbPath = process.env.CORE_DB_PATH ?? './felipe.db';
 const petId = process.env.CORE_PET_ID ?? 'felipe-tamagotchi';
 const corsOrigin = process.env.CORE_CORS_ORIGIN ?? '*';
