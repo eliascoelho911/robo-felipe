@@ -43,6 +43,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    // android.util.Log é chamado no ViewModel/ApiClient; sem isto, os
+    // testes unitários JVM falham com "not mocked".
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
     buildFeatures {
       compose = true
       prefab = true

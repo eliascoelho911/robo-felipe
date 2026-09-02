@@ -30,7 +30,7 @@ enum class ConnectionState {
 }
 
 data class VoiceUiState(
-    val serverUrl: String = "ws://192.168.1.100:8091/xiaozhi/v1/",
+    val serverUrl: String = PetConfig.DEFAULT_XIAOZHI_URL,
     val connectionState: ConnectionState = ConnectionState.DISCONNECTED,
     val isListening: Boolean = false,
     val isSpeaking: Boolean = false,

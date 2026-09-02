@@ -1,5 +1,6 @@
 package com.example.robofelipe.network
 
+import android.util.Log
 import com.example.robofelipe.data.Batch
 import com.example.robofelipe.data.Emotion
 import com.example.robofelipe.data.PetStateSnapshot
@@ -24,17 +25,22 @@ class CoreApiClient(
     }
 
     fun fetchState(coreUrl: String, petId: String): PetStateSnapshot {
+        val url = "${coreUrl.trimEnd('/')}/pet/$petId/state"
+        Log.i(TAG, "GET $url")
         val request = Request.Builder()
-            .url("${coreUrl.trimEnd('/')}/pet/$petId/state")
+            .url(url)
             .get()
             .build()
 
         client.newCall(request).execute().use { response ->
+            Log.i(TAG, "GET /pet/$petId/state <- HTTP ${response.code}")
             if (!response.isSuccessful) {
+                Log.e(TAG, "GET /pet/$petId/state corpo de erro: ${response.body?.string()?.take(500)}")
                 throw IOException("fetchState failed: ${response.code}")
             }
             val body = response.body?.string()
                 ?: throw IOException("fetchState: corpo vazio")
+            Log.d(TAG, "resposta: ${body.take(500)}")
             return json.decodeFromString<PetStateSnapshot>(body)
         }
     }
@@ -56,8 +62,11 @@ class CoreApiClient(
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
             .build()
 
+        Log.i(TAG, "POST /pet/$petId/$tool")
         client.newCall(request).execute().use { response ->
+            Log.i(TAG, "POST /pet/$petId/$tool <- HTTP ${response.code}")
             if (!response.isSuccessful) {
+                Log.e(TAG, "POST /pet/$petId/$tool corpo de erro: ${response.body?.string()?.take(500)}")
                 throw IOException("callTool($tool) failed: ${response.code}")
             }
             val responseBody = response.body?.string()
@@ -75,8 +84,11 @@ class CoreApiClient(
             .post(json.encodeToString(Batch.serializer(), batch).toRequestBody(JSON_MEDIA_TYPE))
             .build()
 
+        Log.i(TAG, "POST /batch (batchId=${batch.batchId})")
         client.newCall(request).execute().use { response ->
+            Log.i(TAG, "POST /batch <- HTTP ${response.code}")
             if (!response.isSuccessful) {
+                Log.e(TAG, "POST /batch corpo de erro: ${response.body?.string()?.take(500)}")
                 throw IOException("sendBatch failed: ${response.code}")
             }
             val body = response.body?.string()
@@ -145,6 +157,7 @@ class CoreApiClient(
     )
 
     companion object {
+        private const val TAG = "CoreApiClient"
         private val JSON_MEDIA_TYPE = "application/json".toMediaType()
 
         private val defaultClient = OkHttpClient.Builder()

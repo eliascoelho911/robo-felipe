@@ -58,6 +58,7 @@ class PetViewModelTest {
             platformId = "android-test",
             petActionEvents = petActionFlow.asSharedFlow(),
             tts = fakeTts,
+            ioDispatcher = testDispatcher,
         )
         scope.advanceUntilIdle()
         return viewModel

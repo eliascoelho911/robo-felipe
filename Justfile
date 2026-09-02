@@ -26,9 +26,11 @@ test:
     npx -y pnpm@latest -r test
 
 # Roda o Core em modo dev (Hono HTTP REST). Padrão :8090; customizável
-# com `just core-dev <porta>`.
+# com `just core-dev <porta>`. Node 24 no PATH: better-sqlite3 13
+# segfaulta no dlopen com o node 22 desta máquina (AGENTS.md, Project
+# Learnings).
 core-dev port="8090":
-    CORE_PORT={{port}} npx -y pnpm@latest --filter core dev
+    PATH="$HOME/.local/opt/node-v24.3.0-linux-x64/bin:$PATH" CORE_PORT={{port}} npx -y pnpm@latest --filter core dev
 
 # Testa só o Core
 core-test:

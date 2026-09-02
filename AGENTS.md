@@ -344,8 +344,9 @@ decisões futuras no projeto. Mantenha enxuto — quando esta seção passar
 de ~30 linhas, promova o conteúdo a um ADR ou a uma regra na seção
 pertinente e limpe aqui.
 
-<!-- Exemplo de entrada (apague ao adicionar a primeira real):
-- 2026-09-01: [firmware] O locale pt-PT do xiaozhi usa "você"; o pt-BR
-  do Tamagotchi deve usar "você" também (Sobrinho espera tratamento
-  informal). Não trocar por "tu".
--->
+- 2026-09-02: [core] `better-sqlite3` 13.0.3 segfaulta no dlopen com Node
+  22.13 nesta máquina (build do umbrel e oficial; ok no Node 24). Rodar o
+  Core com `~/.local/opt/node-v24.3.0-linux-x64/bin/node dist/main.js`
+  após `pnpm --filter core build` (porta default 8090, `CORE_PORT` para
+  trocar). Nesta rede, a máquina dev é `192.168.1.21` — o app Android
+  deve apontar o coreUrl para ela, não para o default `192.168.1.100`.

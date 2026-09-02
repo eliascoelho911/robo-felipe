@@ -3,6 +3,7 @@ package com.example.robofelipe.ui.pet
 import android.app.Application
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,12 +15,15 @@ import com.example.robofelipe.data.PetRepository
 import com.example.robofelipe.data.PetStateSnapshot
 import com.example.robofelipe.data.PlanoDeAcoes
 import com.example.robofelipe.data.Stage
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 sealed class PetAnimation {
@@ -82,6 +86,9 @@ class PetViewModel(
     private val platformId: String,
     private val petActionEvents: SharedFlow<PetActionEvent>,
     private val tts: PetTts?,
+    // Injetável: testes passam o dispatcher de tempo virtual para o
+    // advanceUntilIdle enxergar as chamadas de rede.
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PetUiState())
@@ -94,12 +101,22 @@ class PetViewModel(
 
     fun loadState() {
         viewModelScope.launch {
+            Log.i(TAG, "loadState coreUrl=$coreUrl petId=$petId")
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val state = repository.fetchState(coreUrl, petId)
+                // OkHttp execute() é bloqueante — na Main lança
+                // NetworkOnMainThreadException (message null, o antigo
+                // "Erro ao buscar estado: null").
+                val state = withContext(ioDispatcher) {
+                    repository.fetchState(coreUrl, petId)
+                }
+                Log.i(TAG, "loadState ok")
                 applyState(state)
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Erro ao buscar estado: ${e.message}") }
+                // Classe incluída na msg: exceção sem message (ex.:
+                // NetworkOnMainThreadException) exibia só "null" na UI.
+                Log.e(TAG, "loadState falhou", e)
+                _uiState.update { it.copy(errorMessage = "Erro ao buscar estado: ${e::class.java.simpleName}: ${e.message}") }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
@@ -116,16 +133,21 @@ class PetViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
             try {
-                val plano = repository.sendManualTrigger(
-                    coreUrl, petId, platformId, mapOf("action" to action),
-                )
+                val plano = withContext(ioDispatcher) {
+                    repository.sendManualTrigger(
+                        coreUrl, petId, platformId, mapOf("action" to action),
+                    )
+                }
                 executePlano(plano)
                 if (plano.state == null) {
-                    val state = repository.callTool(coreUrl, petId, action)
+                    val state = withContext(ioDispatcher) {
+                        repository.callTool(coreUrl, petId, action)
+                    }
                     applyState(state)
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
+                Log.e(TAG, "sendManualTrigger($action) falhou", e)
+                _uiState.update { it.copy(errorMessage = "Erro: ${e::class.java.simpleName}: ${e.message}") }
             }
         }
     }
@@ -134,12 +156,15 @@ class PetViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
             try {
-                val plano = repository.sendButtonTrigger(
-                    coreUrl, petId, platformId,
-                )
+                val plano = withContext(ioDispatcher) {
+                    repository.sendButtonTrigger(
+                        coreUrl, petId, platformId,
+                    )
+                }
                 executePlano(plano)
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
+                Log.e(TAG, "sendButtonTrigger falhou", e)
+                _uiState.update { it.copy(errorMessage = "Erro: ${e::class.java.simpleName}: ${e.message}") }
             }
         }
     }
@@ -148,12 +173,15 @@ class PetViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
             try {
-                val plano = repository.sendShakeTrigger(
-                    coreUrl, petId, platformId,
-                )
+                val plano = withContext(ioDispatcher) {
+                    repository.sendShakeTrigger(
+                        coreUrl, petId, platformId,
+                    )
+                }
                 executePlano(plano)
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
+                Log.e(TAG, "sendShakeTrigger falhou", e)
+                _uiState.update { it.copy(errorMessage = "Erro: ${e::class.java.simpleName}: ${e.message}") }
             }
         }
     }
@@ -256,6 +284,8 @@ class PetViewModel(
     }
 
     companion object {
+        private const val TAG = "PetViewModel"
+
         fun factory(
             app: Application,
             petActionEvents: SharedFlow<PetActionEvent>,
