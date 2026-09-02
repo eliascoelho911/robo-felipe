@@ -1,11 +1,11 @@
 package com.example.robofelipe.data
 
-import com.example.robofelipe.network.BatchClient
+import com.example.robofelipe.network.CoreApiClient
 
 // PetViewModel consome este repositório sem saber de OkHttp nem de
 // rotas do Core — só chama operações de domínio.
 open class PetRepository(
-    private val client: BatchClient = BatchClient(),
+    private val client: CoreApiClient = CoreApiClient(),
 ) {
     open fun fetchState(coreUrl: String, petId: String): PetStateSnapshot =
         client.fetchState(coreUrl, petId)

@@ -1,14 +1,14 @@
 package com.example.robofelipe.data
 
-import com.example.robofelipe.network.BatchClient
+import com.example.robofelipe.network.CoreApiClient
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class BatchClientTest {
-    private val client = BatchClient()
+class CoreApiClientTest {
+    private val client = CoreApiClient()
     private val json = Json {
         classDiscriminator = "kind"
         ignoreUnknownKeys = true
