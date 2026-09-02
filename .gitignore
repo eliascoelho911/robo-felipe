@@ -100,8 +100,10 @@ esp32-server/data/
 esp32-server/models/
 
 # ---------- IDEs e editores ----------
-# VS Code: mantemos .vscode/ (arduino.json, c_cpp_properties.json) versionado,
-# mas ignoramos arquivos sensíveis de máquina / cache.
+# VS Code: versionamos arduino.json (board/FQBN/sketch compartilhados);
+# c_cpp_properties.json é regenerado pela extensão Arduino por máquina
+# (compilerPath, includePath e defines absolutos) — nunca versionar.
+.vscode/c_cpp_properties.json
 .vscode/*.bak
 .vscode/.ropeproject/
 # JetBrains
