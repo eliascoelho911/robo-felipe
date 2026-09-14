@@ -6,7 +6,7 @@
 #   just esp32-server-up
 # equivalente a:
 #   docker compose --project-directory esp32-server \
-#     -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+#     -f esp32-server/upstream/main/xiaozhi-server/docker-compose_all.yml \
 #     -f esp32-server/docker-compose.override.yml up -d
 #
 # Sem --project-directory, o `./config/config.yaml` deste override e o
