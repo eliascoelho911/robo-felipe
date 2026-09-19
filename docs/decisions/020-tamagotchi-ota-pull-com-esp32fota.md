@@ -79,7 +79,7 @@ O app recusa instalar qualquer versão **mais velha** que a sua (comparação se
 
 - **Prós:** zero divergência de upstream; semver in-app já pronto (`IsNewVersionAvailable`); rollback (`MarkCurrentVersionValid`) já implementado.
 - **Contras:** **sem verificação de assinatura do binário** — confia só no TLS. Se o CA bundle ou o endpoint forem comprometidos, firmware falso é aceito. Acoplado ao protocolo do server xiaozhi (`mqtt`/`websocket`/`activation`/`server_time` em `CheckVersion`) — herdaríamos o modelo de ativação por código, que não faz sentido para um produto de consumo autocontido do Sobrinho. App-only (sem fs).
-- **Rejeitada:** a ausência de assinatura é inaceitável como defesa-em-profundidade, e o acoplamento operacional contradiz a independência do servidor xiaozhi (Core auto-hospedado, ADR-018).
+- **Rejeitada:** a ausência de assinatura é inaceitável como defesa-em-profundidade, e o acoplamento operacional contradiz a independência do servidor xiaozhi (Nuvem auto-hospedada, ADR-018).
 
 ### `esp_https_ota` (ESP-IDF cru) + Secure Boot v2
 
@@ -93,18 +93,18 @@ O app recusa instalar qualquer versão **mais velha** que a sua (comparação se
 - **Contras:** **irreversível** — se a versão for incrementada por engano, dispositivos ficam brickados. Overkill para hobby (ADR-007). Um atacante precisaria da chave privada para assinar firmware velho válido; o semver in-app já barraria downgrade via manifest.
 - **Rejeitada:** semver in-app basta para o modelo de ameaça; eFuse irreversível é risco desnecessário.
 
-### Manifest hospedado no Core (auto-hospedado, ADR-018)
+### Manifest hospedado no xiaozhi-server (auto-hospedado, ADR-018)
 
-- **Prós:** controle de rollout por dispositivo (canary, full); o Core já tem TLS.
-- **Contras:** se o Core cair, o pet não descobre/atualiza. O Core é um protótipo em PC hoje (ADR-018). GitHub Releases é CDN grátis, versionado por tag, e não depende do Core estar no ar.
-- **Rejeitada para o MVP:** GitHub Releases é mais confiável para distribuição de firmware. O Core pode ganhar um papel de orquestração de rollout no futuro (manifest do Core apontando aos binários do GitHub) sem mudar esta decisão.
+- **Prós:** controle de rollout por dispositivo (canary, full); o servidor já tem TLS.
+- **Contras:** se o servidor cair, o pet não descobre/atualiza — e a Nuvem é always-on por definição (ADR-022). GitHub Releases é CDN grátis, versionado por tag, e não depende do servidor estar no ar.
+- **Rejeitada para o MVP:** GitHub Releases é mais confiável para distribuição de firmware. O servidor pode ganhar um papel de orquestração de rollout (manifest próprio apontando aos binários do GitHub) sem mudar esta decisão.
 
 ## Consequences
 
 ### Positivas
 
 - **Assinatura RSA independe do canal** — mesmo que o CA bundle seja comprometido ou o GitHub sirva um binário adulterado, a verificação in-app rejeita firmware não-assinado. Defesa-em-profundidade sobre o TLS do ADR-016.
-- **Independência do servidor xiaozhi** — o pet puxa firmware de um manifest nosso no GitHub, sem ativação por código nem config de MQTT/WebSocket herdada. Coerente com o Core auto-hospedado (ADR-018) e o produto de consumo do Sobrinho.
+- **Independência do servidor xiaozhi** — o pet puxa firmware de um manifest nosso no GitHub, sem ativação por código nem config de MQTT/WebSocket herdada. Coerente com a Nuvem auto-hospedada (ADR-018) e o produto de consumo do Sobrinho.
 - **App + filesystem na mesma rodada** — sprites, assets e dados do pet (research `tamagotchi-pet-engine-ui.md`) são atualizáveis sem cabo.
 - **CA bundle embutido** — sem manter certificado custom; `useBundledCerts()` cobre GitHub.
 - **Rollback anti-brick grátis** — partições A/B do app; self-test commit; bootloader reverte se travar.

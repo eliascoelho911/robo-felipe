@@ -1,4 +1,4 @@
-# ADR-022: Nuvem — xiaozhi-esp32-server com provedores pt-BR e Core como MCP tool provider
+# ADR-022: Nuvem — xiaozhi-esp32-server com provedores pt-BR e comportamento do pet
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted
 
 ## Date
 
-2026-08-31
+2026-08-31 (ajustada em 2026-09-19: o comportamento do pet passou a morar no próprio servidor — ver ADR-018)
 
 ## Context
 
@@ -16,16 +16,17 @@ o dispositivo é autocontido, sem relay, terminando TLS ele mesmo
 ([ADR-016](016-tamagotchi-processa-voz-sem-relay-de-smartphone.md)); a
 câmera GC0308 e o LTR-553 estão no escopo
 ([ADR-017](017-tamagotchi-inclui-camera-gc0308.md)); o comportamento mora
-num Core em TypeScript auto-hospedado
-([ADR-018](018-tamagotchi-comportamento-mora-no-core-typescript.md)); o OTA
+no próprio xiaozhi-server
+([ADR-018](018-tamagotchi-comportamento-mora-no-xiaozhi-server.md)); o OTA
 é pull com esp32FOTA
 ([ADR-020](020-tamagotchi-ota-pull-com-esp32fota.md)); o firmware-base é o
 `78/xiaozhi-esp32` com customizações
 ([ADR-021](021-tamagotchi-firmware-xiaozhi-esp32-com-customizacoes.md)).
 
 Resta decidir **qual é a Nuvem** — i.e., qual servidor orquestra
-ASR→LLM→TTS para o dispositivo, quais provedores de voz pt-BR usar, como o
-Core se integra ao pipeline de voz, e quem hospeda o endpoint de visão.
+ASR→LLM→TTS para o dispositivo, quais provedores de voz pt-BR usar, como
+o comportamento do pet se integra ao pipeline de voz, e quem hospeda o
+endpoint de visão.
 
 O research [`../research/tamagotchi-firmware-voz.md`](../research/tamagotchi-firmware-voz.md)
 recomenda o `xinnan-tech/xiaozhi-esp32-server` (MIT, README pt-BR) como
@@ -64,15 +65,16 @@ decisivos:
    o endpoint de visão (`/mcp/vision/explain`) que o dispositivo chama
    via POST multipart — **fecha a lacuna do `vision.url`** do research
    de visão.
-5. **MCP endpoint nativo** — o servidor expõe
-   `ws://host:8004/mcp_endpoint/mcp/?token=...`. Servidores MCP externos
-   conectam aqui e registram **tools** que o LLM pode chamar via function
-   calling (exemplos nativos: `get_time`, `play_music`, `calculator`,
-   `get_weather`). **É o ponto natural de integração do Core (TS)** como
-   provedor de tools de pet (`pet.dance()`, `pet.express_emotion()`,
-   `pet.get_state()`, etc.).
+5. **Plugins internos recebem `conn`; MCP externo não.** O servidor tem
+   dois mecanismos de tools: plugins Python internos
+   (`plugins_func/functions/*.py`, registrados via `@register_function`)
+   que, quando `ToolType.SYSTEM_CTL`, recebem `conn: ConnectionHandler`
+   — acesso ao WebSocket do device; e servidores MCP externos, que
+   **não** recebem `conn` (ver emenda). Como as ações do pet não-verbais
+   (dançar, expressar emoção, tontear) precisam do `conn`, o
+   comportamento mora nos **plugins internos** — ver ADR-018.
 6. **Memory** — `nomem` (default, sem memória de conversa). O estado do
-   pet (stats/decay/estágios) mora no Core (ADR-018), não no servidor.
+   pet (stats/decay/estágios) mora no próprio servidor (ADR-018, ADR-023).
 7. **Intent** — `function_call` (default, o próprio LLM decide quando
    chamar tools via function calling nativo). `gpt-4o-mini` suporta
    function calling.
@@ -90,11 +92,12 @@ decisivos:
 
 ## Decision
 
-**Adotar o `xinnan-tech/xiaozhi-esp32-server` como orquestrador de voz da
-Nuvem, com provedores cloud pt-BR (GroqASR + gpt-4o-mini + EdgeTTS +
-ChatGLMVLLM), e o Core (TypeScript) integrado como MCP tool provider.**
-A Nuvem é auto-hospedada (PC do autor → VPS), sempre-on, e fala HTTPS/WSS
-direto com o dispositivo (sem relay, ADR-016).
+**Adotar o `xinnan-tech/xiaozhi-esp32-server` como Nuvem do Robô Felipe —
+orquestrador de voz com provedores cloud pt-BR (GroqASR + gpt-4o-mini +
+EdgeTTS + ChatGLMVLLM) e host do comportamento do pet (tools nativas +
+handlers de trigger).** A Nuvem é auto-hospedada (PC do autor → VPS),
+sempre-on, e fala HTTPS/WSS direto com o dispositivo (sem relay,
+ADR-016).
 
 ### 1. Provedores — stack cloud pt-BR (~$0.09/mês)
 
@@ -105,7 +108,7 @@ direto com o dispositivo (sem relay, ADR-016).
 | TTS | EdgeTTS | pt-BR-FranciscaNeural | free | vozes Neural Microsoft | mesmas vozes do Azure, sem account/key; `voice` field configurável |
 | VLLM | ChatGLMVLLM | glm-4v-flash | free | multimodal | endpoint `/mcp/vision/explain` no servidor; fallback Gemini/Qwen-VL/GPT-4o |
 | VAD | SileroVAD | — | local | — | VAD no servidor, não no device |
-| Memory | nomem | — | — | — | estado do pet mora no Core (ADR-018) |
+| Memory | nomem | — | — | — | estado do pet mora no próprio servidor (ADR-023) |
 | Intent | function_call | — | — | — | gpt-4o-mini decide quando chamar tools |
 
 Custo total: **~$0.09/mês** (apenas gpt-4o-mini; demais free). Latência
@@ -124,76 +127,34 @@ selected_module:
   Intent: function_call
 ```
 
-### 2. Core como MCP tool provider
+### 2. Comportamento do pet — nativo no servidor
 
-O Core (TypeScript, ADR-018) conecta-se ao **MCP endpoint** do
-xiaozhi-server (`ws://host:8004/mcp_endpoint/mcp/?token=...`) e registra
-tools de pet que o LLM chama via function calling quando reconhece
-intents de ação:
+O comportamento do pet (estado, stats, decay, estágios, moods, tools)
+é **código Python nativo do fork** (ADR-018), em dois pontos de
+integração:
 
-- `pet.dance()` → Core retorna Plano de Ações com `dançar{...}` →
-  dispositivo executa a animação.
-- `pet.express_emotion(emotion)` → Core retorna `expressar_emocao{...}`.
-- `pet.get_state()` → Core retorna estado atual (mood, stats, estágio)
-  como contexto para o LLM moldar a resposta.
-- `pet.feed()`, `pet.play()`, `pet.sleep()` → atualizam stats no Core.
+- **Voz (via LLM)** — as tools do pet são plugins internos
+  (`plugins_func`, `ToolType.SYSTEM_CTL`). Quando o Sobrinho fala uma
+  intent de ação, o LLM chama a tool via function calling; a tool muta
+  o estado do pet localmente (sem HTTP para fora) e envia ações
+  não-verbais ao device via `conn`
+  (`conn.websocket.send({"type":"pet_action",...})`), retornando
+  `ActionResponse(Action.REQLLM, context)` para o LLM compor a resposta
+  textual que o EdgeTTS sintetiza.
+- **Triggers não-vozeados (sem LLM)** — sacudida, botão, proximidade e
+  RTC wake chegam como mensagens no protocolo WebSocket do xiaozhi,
+  tratadas por um handler interno do fork: aplica decay on-demand,
+  mapeia Trigger → Ação e devolve `pet_action` ao device.
 
-As tools específicas (nomes, parâmetros, schemas) serão definidas na ADR
-"PET vivo" (próxima). Esta ADR estabelece o **padrão de integração**
-(MCP), não o catálogo de tools.
+O catálogo de tools, o modelo de stats e o mapeamento de triggers são
+definidos na [ADR-023](023-tamagotchi-pet-vivo-estado-stats-decay-mcp-tools.md).
+**Separação de responsabilidades**: o device orquestra percepção e
+execução (detecta Triggers, transporta voz, anima a UI); o servidor
+orquestra voz **e** comportamento; o LLM é a junção para o caminho
+vozeado — recebe o transcript do ASR, decide se chama uma tool do pet,
+e produz a resposta textual que o TTS sintetiza.
 
-**Separação de responsabilidades**: o xiaozhi-server orquestra voz
-(ASR→LLM→TTS, streaming Opus, protocolo WSS com o device); o Core
-orquesta comportamento (estado do pet, Planos de Ações, stats/decay). O
-LLM é o ponto de junção — recebe o transcript do ASR, decide se chama
-uma tool do Core (function calling), e produz a resposta textual que o
-TTS sintetiza.
-
-### 3. Arquitetura de duas fases
-
-O Robô Felipe tem dois hosts de Plataforma (ADR-018): Android
-(protótipo de laboratório, hoje) → CoreS3 (produto, futuro). A Nuvem
-acompanha essa transição:
-
-**Fase 1 — Android protótipo (hoje, sem CoreS3)**:
-
-```
-App Android ──HTTPS/Batch──▶ Core (TS) ──HTTPS──▶ GroqASR + gpt-4o-mini
-                                     │
-                                     └──Plano de Ações──▶ App Android
-                                                            │
-                                                            └──TTS nativo pt-BR
-```
-
-O Core orquestra a Nuvem diretamente: recebe o Batch (com áudio ou
-transcript), chama GroqASR (se áudio) + gpt-4o-mini, retorna Plano de
-Ações (`falar{texto}`). O app Android renderiza TTS nativo pt-BR
-(ADR-018). **Sem xiaozhi-server** — o Core assume a orquestração de voz.
-A divisão de trabalho entre app (faz ASR local?) e Core (faz ASR via
-Groq?) fica para a implementação.
-
-**Fase 2 — CoreS3 (futuro, com hardware em mãos)**:
-
-```
-CoreS3 ──WSS/Opus──▶ xiaozhi-server ──▶ GroqASR → gpt-4o-mini → EdgeTTS
-  │                        │                        │
-  │                        │                        └──chama tools──▶ Core (MCP)
-  │                        │                        ◀──Plano/Ações───│
-  │                        ◀──Opus (TTS)────────────│
-  │
-  └──HTTPS/Batch──▶ Core (triggers não-vozeados: sacudida, botão, proximidade)
-```
-
-O xiaozhi-server orquestra voz (WSS + Opus + ASR/LLM/TTS). O Core conecta
-ao MCP endpoint do servidor e expõe tools de pet. Para triggers
-não-vozeados (sacudida/botão/proximidade/RTC), o dispositivo envia o
-Batch direto ao Core via HTTPS — não passa pelo pipeline de voz.
-
-O código de ASR/LLM calling do Core (Fase 1) torna-se **deprecated** na
-Fase 2 — o xiaozhi-server assume. Mas as **decisões de provedores**
-(Groq, OpenAI, EdgeTTS) são as mesmas em ambas as fases.
-
-### 4. Visão — ChatGLMVLLM via xiaozhi-server
+### 3. Visão — ChatGLMVLLM via xiaozhi-server
 
 O `vision.url` (endpoint multimodal que o dispositivo chama via POST
 multipart com a foto da GC0308, ADR-017) é **hospedado pelo
@@ -206,29 +167,29 @@ Isso fecha a lacuna do research `tamagotchi-visao-cam.md` ("definir na
 ADR de nuvem quem hospeda o `vision.url`"): **o próprio xiaozhi-server
 hospeda**, usando o slot VLLM plugável.
 
-### 5. Hosting — mesmo box (Core + xiaozhi-server)
+### 4. Hosting — um único serviço
 
-O Core (Node/Bun, TypeScript) e o xiaozhi-server (Python) rodam no
-**mesmo host** — PC do autor no protótipo, VPS depois. Ambos always-on.
+A Nuvem é **um único serviço** (xiaozhi-server, Python, Docker) — PC do
+autor no protótipo, VPS depois. Always-on.
 
-- **Core**: porta HTTPS (ex: 3000) para receber Batches do dispositivo.
-- **xiaozhi-server**: porta WSS (ex: 8000) para voz + porta HTTP (ex:
-  8003) para visão + porta WS (ex: 8004) para MCP endpoint.
+- **Porta WSS (ex: 8000)** — voz (Opus) + mensagens do pet com o device.
+- **Porta HTTP (ex: 8003)** — endpoint de visão.
 - **Auth**: `server.auth.enabled = true` se VPS (whitelist de tokens de
   dispositivo). No PC do autor (LAN), pode manter `false`.
 
-O dispositivo precisa de duas URLs configuradas (NVS ou build config):
-(a) URL do xiaozhi-server (WSS, para voz) e (b) URL do Core (HTTPS, para
-triggers não-vozeados). Ambas entregues durante o WiFi provisioning ou
-hardcoded no build do firmware.
+O dispositivo precisa de uma única URL (a do xiaozhi-server),
+entregue no WiFi provisioning ou hardcoded no build do firmware. O
+estado do pet persiste na persistência própria do servidor
+(ADR-023), nos volumes do compose.
 
-### 6. System prompt — persona Robô Felipe pt-BR
+### 5. System prompt — persona Robô Felipe pt-BR
 
 O `prompt` field do `config.yaml` substitui a persona default (garota
 taiwanesa "小智") pela persona do Robô Felipe. O `language` field é
-definido como `"Português do Brasil"`. O template
-`agent-base-prompt.txt` injeta a persona, o idioma, data/hora e contexto
-dinâmico. Esboço (a refinar na implementação):
+definido como `"Português do Brasil"` (sem ele, o template
+`agent-base-prompt.txt` defaulta para 中文 e o EdgeTTS pt-BR falha).
+O template injeta a persona, o idioma, data/hora e o contexto dinâmico
+do estado do pet (ADR-023). Esboço (a refinar na implementação):
 
 ```
 Você é o Felipe, um cachorro-robô brincalhão e leal. Você é um
@@ -266,8 +227,8 @@ falar "olá" ao detectar wake word, pois não há wake word).
   (`pt_BR-cadu-medium`) é voz masculina adulta, não combina com pet.
   Qualidade de Qwen2.5-3B Q4 em pt-BR não validada.
 - **Rejeitada para MVP:** mais trabalho (adapter Piper) e qualidade
-  incerta. Self-hosted permanece como rota futura se privacidade/offline
-  for crítica ou se os provedores cloud mudarem de pricing.
+  incerta. Self-hosted permanece como rota se privacidade/offline for
+  crítica ou se os provedores cloud mudarem de pricing.
 
 ### Híbrido (cloud primária + self-hosted fallback)
 
@@ -287,7 +248,7 @@ falar "olá" ao detectar wake word, pois não há wake word).
   `type: deepgram`). Custo ~$0.0043/min (dentro do budget, mas não free).
 - **Rejeitada:** GroqASR (Whisper, free, nativo) é alternativa superior
   para MVP. Se latência for problema na prática, Deepgram pode ser
-  reconsiderado como adapter custom futuro.
+  reconsiderado como adapter custom.
 
 ### Azure Neural TTS (TTS)
 
@@ -301,15 +262,16 @@ falar "olá" ao detectar wake word, pois não há wake word).
   (uso não-oficial), troca para Azure TTS (mesmas vozes, pago) — mas
   como fallback, não como primária.
 
-### Core como LLM endpoint (Core recebe transcript, chama LLM, retorna texto)
+### Serviço de comportamento separado (Core TS + contrato)
 
-- **Prós:** Core controla toda a lógica; uma única porta.
-- **Contras:** Core só retorna texto (não Plano de Ações multi-ação);
-  indireção extra (ASR→Core→LLM→Core→TTS em vez de ASR→LLM→TTS);
-  latência adicional; Core precisa reimplementar function calling.
-- **Rejeitada:** o padrão MCP tool provider (Core expõe tools, LLM chama
-  quando precisa) é **separação limpa** — o xiaozhi-server orquestra voz,
-  o Core orquestra comportamento, o LLM é a junção. Sem indireção.
+- **Prós:** comportamento desacoplado da Nuvem; contrato versionado
+  sobreviveria a trocas de Plataforma.
+- **Contras:** segundo serviço always-on; hop HTTP e dedupe/versionamento
+  de envelope como peso permanente; adapter de ponte eterna; com o
+  Android removido, o contrato perdeu consumidor.
+- **Rejeitada** (análise completa na [ADR-018](018-tamagotchi-comportamento-mora-no-xiaozhi-server.md)):
+  o `conn` e o function calling já moram no servidor — hospedar o
+  comportamento ali elimina a ponte em vez de reforçá-la.
 
 ## Consequences
 
@@ -320,19 +282,15 @@ falar "olá" ao detectar wake word, pois não há wake word).
 - **pt-BR garantido** — Whisper (multilíngue), gpt-4o-mini (pt-BR
   excelente), EdgeTTS (vozes Neural pt-BR). Nenhuma adaptação de
   idioma necessária.
-- **Separação limpa** — xiaozhi-server orquestra voz; Core orquestra
-  comportamento; LLM é a junção via function calling. Cada componente
-  tem uma responsabilidade.
-- **MCP nativo** — o xiaozhi-server já tem MCP endpoint; o Core só
-  conecta e registra tools. Sem glue custom de protocolo.
+- **Um único serviço** — voz, visão e comportamento no mesmo processo
+  Docker; uma URL no device, um conjunto de config, um runtime.
+- **`conn` nativo** — as tools do pet enviam ações não-verbais pelo
+  mesmo WebSocket da voz, sem bridge HTTP entre serviços nossos.
 - **Visão resolvida** — o `vision.url` é hospedado pelo próprio
   xiaozhi-server (slot VLLM), fechando a lacuna do research de visão.
 - **Troca de provedores sem firmware** — ASR/LLM/TTS são config do
-  servidor (`data/.config.yaml`). Trocar Groq→Deepgram ou EdgeTTS→Azure
+  servidor (`data/.config.yaml`). Trocar Groq→OpenaiASR ou EdgeTTS→Azure
   é editar YAML e reiniciar o servidor, sem tocar no dispositivo.
-- **Stack idêntica nas duas fases** — GroqASR + gpt-4o-mini + EdgeTTS
-  em Fase 1 (Core direto) e Fase 2 (xiaozhi-server). Só muda quem
-  orquestra.
 
 ### Negativas
 
@@ -347,26 +305,15 @@ falar "olá" ao detectar wake word, pois não há wake word).
 - **Groq free tier tem limites** — rate limits de requests/minuto e
   requests/dia. Se exceder (improvável com ~50 cmds/dia), troca para
   OpenaiASR (`gpt-4o-mini-transcribe`, $0.003/min — ~$0.30/mês).
-- **gpt-4o-mini requer API key OpenAI** — secreto longo prazo. Custo
+- **gpt-4o-mini requer API key OpenAI** — segredo de longo prazo. Custo
   ~$0.09/mês dentro das premissas (225k in + 90k out tokens/mês). Se o
   uso crescer (Sobrinho fala muito), custo escala suavemente.
 - **ChatGLMVLLM free tier pode ter limites** — `glm-4v-flash` é
   gratuito, mas se a cota se esgotar, troca para Gemini
   (`gemini-1.5-flash`, free tier generoso), Qwen-VL ou GPT-4o (pago).
-- **Dois serviços para hostear** — Core (Node/Bun) + xiaozhi-server
-  (Python) no mesmo box. Complexidade operacional: dois runtimes, dois
-  processos para monitorar, dois conjuntos de config. Mitigação: Docker
-  Compose ou systemd units.
-- **xiaozhi-server é Python** — mais um runtime além do Node/Bun do
-  Core. Dependências Python (venv/pip), compatibilidade de versões.
-- **Código throwaway na Fase 1** — o Core implementa chamadas a
-  GroqASR + gpt-4o-mini (Fase 1) que se tornam desnecessárias quando o
-  xiaozhi-server assume (Fase 2). Esforço de implementação que não
-  sobrevive à transição. Mitigação: manter o código de Nuvem do Core
-  isolado num módulo, facilitando a remoção.
-- **MCP tools específicas ficam para a próxima ADR** — esta ADR
-  estabelece o padrão (MCP), não o catálogo de tools. Os schemas de
-  `pet.dance()`, `pet.get_state()`, etc. são definidos na ADR "PET vivo".
+- **Comportamento acoplado ao fork** — merges do upstream
+  `xiaozhi-esp32-server` passam por cima do código do pet. Mitigação:
+  comportamento isolado em módulo próprio dentro do fork.
 - **`server.auth.enabled` deve ser true em VPS** — se o servidor for
   exposto à internet, auth por token deve ser habilitada (whitelist de
   tokens de dispositivo). No PC do autor (LAN), pode manter desabilitado.
@@ -382,29 +329,30 @@ falar "olá" ao detectar wake word, pois não há wake word).
   Refina `cloud-voice-providers.md` (Deepgram→GroqASR, Azure
   TTS→EdgeTTS) — as recomendações de provedor do research são
   substituídas pelas escolhas nativas do xiaozhi-server.
-- **Consistente com ADR-018** (Core em TS): o Core como MCP tool
-  provider é o "caminho anotado" na Nota do ADR-018 ("o Core pode
-  expor ferramentas MCP para integração com o xiaozhi-esp32-server").
-  Esta ADR decide esse caminho.
+- **Consistente com ADR-018** (comportamento no server): os plugins
+  internos com `conn` são o padrão de integração; a versão anterior
+  desta ADR (Core como MCP/HTTP provider externo) foi substituída por
+  esse desenho.
 - **Consistente com ADR-021** (firmware): o firmware-base xiaozhi-esp32
   já fala o protocolo WSS+Opus com o xiaozhi-server. Zero adaptação de
-  protocolo no firmware.
-- **"PET vivo"** (estado/stats/decay/estágios, persistência cloud vs
-  NVS, `advanceStats` no wake do RTC, catálogo de MCP tools do pet) fica
-  como tópico aberto — **próxima ADR pendente**.
+  protocolo para voz; as mensagens `pet_action`/trigger são extensões
+  do protocolo, definidas no fork e espelhadas no firmware.
+- **"PET vivo"** (estado/stats/decay/estágios, catálogo de tools,
+  triggers não-vozeados) está fechado na
+  [ADR-023](023-tamagotchi-pet-vivo-estado-stats-decay-mcp-tools.md).
 - **Hosting transição PC→VPS**: quando migrar de PC para VPS, habilitar
-  `server.auth.enabled`, configurar TLS no Core (Let's Encrypt) e no
-  xiaozhi-server (WSS já termina TLS no dispositivo, mas o servidor
-  precisa de certificado). Detalhes de infra ficam para a implementação.
+  `server.auth.enabled` e provisionar certificado TLS para o WSS
+  (o device termina TLS, mas o servidor precisa do certificado).
+  Detalhes de infra ficam para a implementação.
 - **Referências**: research
   [`../research/cloud-voice-providers.md`](../research/cloud-voice-providers.md),
   [`../research/selfhosted-voice-providers.md`](../research/selfhosted-voice-providers.md),
   [`../research/tamagotchi-firmware-voz.md`](../research/tamagotchi-firmware-voz.md),
   [`../research/tamagotchi-visao-cam.md`](../research/tamagotchi-visao-cam.md);
-  config.yaml e docs/mcp-endpoint-integration.md do xiaozhi-esp32-server
-  verificados em 2026-08-31 via GitHub API.
+  config.yaml do xiaozhi-esp32-server verificado em 2026-08-31 via
+  GitHub API.
 
-## Emenda (2026-08-31)
+## Emenda (2026-08-31, ajustada em 2026-09-19)
 
 ### Descoberta: MCP externo não tem `conn`
 
@@ -423,56 +371,12 @@ servidor tem **dois tipos de tools**:
    stdio/SSE/streamable-http. **Servidores MCP externos NÃO recebem
    `conn`** — não têm acesso ao WebSocket do device.
 
-A decisão original (§2) dizia que o Core (TS) se conectaria ao MCP
-endpoint do xiaozhi-server como servidor MCP externo. Isso **não
-funciona** para ações não-TTS (`dançar`, `expressar_emocao`,
-`ficar_tonto`): o Core não conseguiria enviar essas ações ao device,
-pois MCP externo não tem `conn`.
+### Consequência: tools do pet são plugins internos
 
-### Solução: Core HTTP + adapter Python interno
-
-O Core é um **HTTP server** (Hono, REST), não um MCP server. Um
-**adapter Python** interno no xiaozhi-server
-(`plugins_func/functions/pet_tools.py`) registra cada tool de pet como
-`ToolType.SYSTEM_CTL`:
-
-- Chama o Core via HTTP (`httpx`) para lógica de estado (stats, decay,
-  Plano de Ações).
-- Usa `conn` para enviar ações não-verbais ao device via
-  `conn.websocket.send({"type":"pet_action","action":"dance",...})`.
-- Retorna `ActionResponse(Action.REQLLM, context, None)` — o LLM gera o
-  texto da resposta, o EdgeTTS sintetiza.
-
-O adapter Python é **permanente** (sobrevive Fase 1→Fase 2 — mesmo
-xiaozhi-server, mesmo pattern). O Core é **permanente** (pet state +
-lógica). Só o device muda (Android → CoreS3).
-
-### O que muda em cada seção
-
-- **Título**: "Core como MCP tool provider" → "Core como HTTP server +
-  adapter Python interno".
-- **§2**: O Core não conecta ao MCP endpoint. O Core é HTTP server; o
-  adapter Python no xiaozhi-server bridgeia as tools ao LLM.
-- **§3 (Arquitetura de duas fases)**: **Fase 1 = Fase 2** com Android
-  como device. O xiaozhi-server é incluído desde o início (zero código
-  throwaway). O app Android fala WSS+Opus com o xiaozhi-server e envia
-  Batch via HTTPS ao Core para triggers não-vozeados. O diagrama Fase 1
-  original (Core orquestra Nuvem direto, sem xiaozhi-server) é
-  **descartado**.
-- **§5 (Hosting)**: removida a menção a "porta WS (ex: 8004) para MCP
-  endpoint". O Core expõe HTTP na porta 3000; o adapter Python chama
-  `http://host.docker.internal:3000` de dentro do contêiner.
-- **Consequências**: "MCP nativo" → "Adapter Python interno com `conn`".
-- **Notas**: a consistência com ADR-018 ("o Core pode expor ferramentas
-  MCP") é refinada — o Core expõe ferramentas via HTTP, bridgeadas pelo
-  adapter Python.
-
-### O que NÃO muda
-
-- **Provedores** (§1): GroqASR + gpt-4o-mini + EdgeTTS + ChatGLMVLLM —
-  idênticos.
-- **Visão** (§4): `vision.url` hospedado pelo xiaozhi-server — idêntico.
-- **System prompt** (§6): persona Robô Felipe pt-BR — idêntico.
-- **selected_module**: VAD/ASR/LLM/VLLM/TTS/Memory/Intent — idênticos.
-- **Triggers não-vozeados**: sempre foram Batch→Core via HTTPS,
-  independente do padrão MCP/HTTP.
+A decisão original desta ADR (Core externo como MCP tool provider) e a
+primeira emenda (Core HTTP + adapter Python de ponte) foram substituídas
+pelo desenho atual ([ADR-018](018-tamagotchi-comportamento-mora-no-xiaozhi-server.md)):
+**as tools do pet são plugins internos Python** (`ToolType.SYSTEM_CTL`,
+com `conn`), que mutam o estado do pet localmente (no próprio servidor,
+ADR-023) e enviam `pet_action` ao device pelo mesmo WebSocket da voz.
+Nada do pet depende de MCP externo nem de HTTP entre serviços nossos.

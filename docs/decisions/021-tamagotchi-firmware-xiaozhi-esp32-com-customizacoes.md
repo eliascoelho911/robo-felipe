@@ -14,7 +14,7 @@ As decisões anteriores fixaram o contorno do Tamagotchi: hardware é o M5Stack
 CoreS3 ([ADR-019](019-tamagotchi-hardware-m5stack-cores3.md)); o dispositivo é
 autocontido, sem relay, terminando TLS ele mesmo ([ADR-016](016-tamagotchi-processa-voz-sem-relay-de-smartphone.md));
 a câmera GC0308 e o LTR-553 estão no escopo ([ADR-017](017-tamagotchi-inclui-camera-gc0308.md));
-o comportamento mora num Core em TypeScript auto-hospedado ([ADR-018](018-tamagotchi-comportamento-mora-no-core-typescript.md));
+o comportamento mora no xiaozhi-server auto-hospedado ([ADR-018](018-tamagotchi-comportamento-mora-no-xiaozhi-server.md));
 o OTA é pull com esp32FOTA e manifest no GitHub Releases ([ADR-020](020-tamagotchi-ota-pull-com-esp32fota.md)).
 
 Resta decidir **qual firmware roda no CoreS3** e quais customizações são
@@ -136,7 +136,7 @@ base da tela, sobreposto à face do pet.
 A personalidade conversacional (persona, vocabulário para 8 anos,
 child-safe) é **configuração do servidor/Nuvem** (prompt de sistema), não
 do firmware — o firmware só renderiza a UI e transporta áudio. A ponte
-estado→prompt fica no Core (ADR-018).
+estado→prompt fica no xiaozhi-server (ADR-018).
 
 ### 4. i18n — criar locale pt-BR
 
@@ -361,21 +361,23 @@ silenciosamente).
   trecho que recomendava TFT_eSPI + TamaFi como base de UI — esta ADR
   decide LVGL (já integrado ao xiaozhi) + camada de pet customizada. O
   design de stats/decay do catode32 permanece como referência para a ADR
-  "PET vivo" futura.
+  "PET vivo" ([ADR-023](023-tamagotchi-pet-vivo-estado-stats-decay-mcp-tools.md)).
 - **Supersede parcial do research `tamagotchi-operacao.md`** Need 2
   (WiFiManager) — esta ADR decide usar o captive portal nativo do xiaozhi
   (`USE_HOTSPOT_WIFI_PROVISIONING`), dispensando WiFiManager externo.
 - **OTA wrapper**: detalhes de assinatura, manifest e hosting no
   [ADR-020](020-tamagotchi-ota-pull-com-esp32fota.md). Esta ADR só
   registra a substituição de `ota.cc` e o self-test.
-- **Core (TypeScript)**: o firmware não decide comportamento — apenas
-  detecta Triggers, envia Batches e executa Planos de Ações (ADR-018). A
-  ponte firmware↔Core (como o Core se conecta ao protocolo xiaozhi) é
-  detalhada quando o CoreS3 chegar em mãos.
+- **Comportamento (xiaozhi-server)**: o firmware não decide comportamento —
+  apenas detecta Triggers e executa as ações recebidas (ADR-018). As
+  mensagens `pet_action`/trigger do protocolo WSS são detalhadas no fork
+  da Nuvem e espelhadas no firmware.
 - **"PET vivo"** (estado/decay/estágios, NVS vs cloud, `advanceStats` no
-  wake do RTC) fica como tópico aberto — ADR futura.
-- **Próximas ADRs pendentes**: Nuvem (provedores ASR/LLM/TTS pt-BR +
-  hosting vision.url), "PET vivo" (estado/stats/decay/persistência).
+  wake do RTC) foi fechada na [ADR-023](023-tamagotchi-pet-vivo-estado-stats-decay-mcp-tools.md).
+- **ADRs seguintes**: Nuvem (provedores ASR/LLM/TTS pt-BR + hosting
+  vision.url) na [ADR-022](022-tamagotchi-nuvem-xiaozhi-server-com-provedores-pt-br.md),
+  "PET vivo" (estado/stats/decay/persistência) na
+  [ADR-023](023-tamagotchi-pet-vivo-estado-stats-decay-mcp-tools.md).
 - **Referências**: research [`../research/tamagotchi-firmware-voz.md`](../research/tamagotchi-firmware-voz.md),
   [`../research/tamagotchi-pet-engine-ui.md`](../research/tamagotchi-pet-engine-ui.md),
   [`../research/tamagotchi-operacao.md`](../research/tamagotchi-operacao.md),

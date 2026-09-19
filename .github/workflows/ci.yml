@@ -16,7 +16,9 @@ jobs:
       - uses: actions/checkout@v7
 
       # Só o submódulo da Nuvem — o override mescla sobre o compose do
-      # upstream. (O submódulo firmware não é necessário aqui.)
+      # upstream (compose_all = stack completo com MySQL/Redis, mesma base
+      # do `just esp32-server-up`). (O submódulo firmware não é necessário
+      # aqui.)
       - name: Init submódulo esp32-server/upstream
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -26,7 +28,7 @@ jobs:
       - name: Valida docker compose (base + override)
         run: |
           docker compose --project-directory esp32-server \
-            -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+            -f esp32-server/upstream/main/xiaozhi-server/docker-compose_all.yml \
             -f esp32-server/docker-compose.override.yml config > /dev/null
 
   ota-manifest:

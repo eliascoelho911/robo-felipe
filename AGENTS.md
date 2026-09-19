@@ -2,7 +2,7 @@
 
 Instruções para agentes OpenCode no repositório **robo-felipe**. Este
 arquivo é o ponto de entrada; subsistemas com regras próprias têm
-`AGENTS.md` aninhados (`android/AGENTS.md`, `core/AGENTS.md`).
+`AGENTS.md` aninhados (padrão xiaozhi).
 
 ## Propósito
 
@@ -31,48 +31,50 @@ EXATAMENTE os termos prescritos e evite os listados. Termos centrais:
 - **Tamagotchi** (variante atual), nunca "o bichinho" / "o pet".
 - **Robô Felipe**, nunca "o robô" / "o cachorro".
 - **Sobrinho** (usuário final, 8 anos), nunca "criança" / "usuário".
-- **Plataforma**, **Trigger**, **Batch**, **Core**, **Ação**, **Plano de
-  Ações**, **Nuvem**, **Relay** têm definições precisas — consulte antes
-  de usar em ADRs ou código.
+- **Plataforma**, **Trigger**, **Ação**, **Nuvem**, **Relay** têm
+  definições precisas — consulte antes de usar em ADRs ou código.
 
 Não invente variantes de corpo: as três existentes são **Bípede**,
 **Quadrúpede** e **Tamagotchi**.
 
-## Arquitetura — o contrato que governa tudo
+## Arquitetura — o comportamento mora na Nuvem
 
 O Robô Felipe separa **comportamento** (o que o pet faz) de **encarnação**
-(onde ele roda). Comportamento mora num **Core TypeScript
-auto-hospedado**; a encarnação é uma **Plataforma** que detecta Triggers,
-envia Batches ao Core e executa o Plano de Ações que volta.
+(onde ele roda). O comportamento mora no **xiaozhi-esp32-server** (fork
+nosso — a Nuvem), que também orquestra a voz; a encarnação é o **device**
+(firmware do CoreS3), que detecta Triggers e executa as Ações que a
+Nuvem envia.
 
 ```
-Plataforma ──Trigger──► Batch ──► Core (TS) ──Plano de Ações──► Plataforma
-  (Android hoje,            │       │  ├── estado do pet (18 stats)
-   CoreS3 depois)           │       │  ├── HTTP endpoints (adapter Python
-                           │       │  │   bridgeia ao LLM do xiaozhi-server)
-                           │       │  └── Nuvem (xiaozhi-esp32-server:
-                           │       │      ASR/LLM/TTS pt-BR)
-                           └─ o contrato Batch→Plano de Ações
-                              sobrevive à troca de host
+Device (CoreS3, firmware xiaozhi) ──WSS/TLS──► Nuvem (xiaozhi-esp32-server, fork)
+   detecta Triggers,                             ├── voz: ASR → LLM → TTS pt-BR
+   executa Ações                                 ├── comportamento do pet (Python nativo):
+   (TTS, animações LVGL)                         │   estado (18 stats), decay, estágios,
+                                                 │   tools do LLM, handlers de trigger
+                                                 └── provedores plugáveis (Groq/OpenAI/Edge)
 ```
 
 **Regras arquiteturais não-negociáveis:**
 
-1. **Comportamento nunca mora no firmware ou no app.** Firmware e app
-   são Plataformas: eles detectam Triggers e executam Ações, nada mais.
-   Lógica de pet, decay de stats, decisão do que dizer — tudo no Core.
-2. **O contrato Batch→Plano de Ações é o que sobrevive à troca de host.**
-   A Plataforma Android de hoje e o CoreS3 de amanhã devem falar o mesmo
-   contrato. Mudar a Plataforma nunca exige reescrever o Core.
-3. **O Core é cloud-primary.** O estado canônico do pet vive no Core
-   (SQLite), não no dispositivo. No MVP não há fallback NVS — se o
-   dispositivo perde conectividade, o pet pausa, não diverge.
-4. **A Nuvem é trocável.** Provedores de ASR/LLM/TTS são config, não
-   código. Trocar Groq por outro provedor não toca no Core nem no
-   firmware.
+1. **Comportamento nunca mora no firmware.** O device é Plataforma:
+   detecta Triggers e executa Ações, nada mais. Lógica de pet, decay de
+   stats, decisão do que dizer — tudo no servidor.
+2. **O comportamento é código Python nativo do fork da Nuvem** — tools
+   do pet (`plugins_func`, `ToolType.SYSTEM_CTL`, com `conn`) para o
+   caminho vozeado e handlers de mensagem WSS para triggers
+   não-vozeados. Sem serviço TypeScript separado, sem contrato
+   Batch→Plano de Ações.
+3. **Estado cloud-primary no servidor.** O estado canônico do pet vive
+   na persistência do servidor, não no dispositivo. No MVP não há
+   fallback NVS — se o device perde conectividade, o pet pausa, não
+   diverge.
+4. **Provedores de ASR/LLM/TTS são trocáveis** — config, não código.
+   Trocar Groq por outro provedor não toca no firmware nem no
+   comportamento. O comportamento é código nosso: isole-o em módulo
+   próprio dentro do fork, sem espalhar lógica pelo core upstream.
 
-Detalhes da decisão: ADR-018 (Core + contrato), ADR-022 (Nuvem),
-ADR-023 (pet vivo), ADR-016 (sem relay).
+Detalhes da decisão: ADR-018 (comportamento no xiaozhi-server),
+ADR-022 (Nuvem), ADR-023 (pet vivo), ADR-016 (sem relay).
 
 ## Mapa do repositório
 
@@ -81,18 +83,15 @@ ADR-023 (pet vivo), ADR-016 (sem relay).
 | `AGENTS.md` | este arquivo | ativo |
 | `CONTEXT.md` | glossário ubíquo | ativo, autoritativo |
 | `.github/` | CI (ci.yml), release OTA (release.yml), Dependabot | ativo (ADR-024) |
-| `android/` | **Plataforma atual** de testes do Core (Kotlin/Compose) | ativo (ADR-018) |
-| `core/` | **Core** TypeScript (Hono + SQLite) | ativo |
-| `packages/contract/` | schemas Zod do Batch e Plano de Ações → JSON Schema | ativo |
-| `esp32-server/` | Nuvem auto-hospedada (submodule → fork xiaozhi-esp32-server) | ativo |
+| `esp32-server/` | **Nuvem** auto-hospedada — voz + comportamento do pet (submodule → fork xiaozhi-esp32-server) | ativo |
 | `firmware/` | firmware (submodule → fork 78/xiaozhi-esp32, ESP-IDF) | ativo |
 | `ota/` | manifestos e chaves de assinatura OTA | ativo |
-| `docs/decisions/` | ADRs (imutáveis) | ativo |
+| `docs/decisions/` | ADRs | ativo |
 | `docs/research/` | pesquisa de solução | ativo |
 | `hardware/cores3/` | capacidades e skin do CoreS3 | ativo |
 | `hardware/audio/` | BOM/esquema de áudio do WROOM (legado) | legado — GPIOs precisam remap p/ S3 |
 | `samples/` | sketches Arduino legados (hello_world, stream_mic_serial) | legado — referência |
-| `Justfile` | recipes multi-linguagem (test/build/lint) | ativo |
+| `Justfile` | recipes (build/check por stack) | ativo |
 | `tutorial_raw/` | brutos de tutorial (~300MB) | gitignored |
 
 ## Branches = variantes de corpo
@@ -111,23 +110,27 @@ ACEBOTT, sketch do bípede, 3d-models, datasheet do WROOM, ESP32-CAM.
 Esses foram removidos — vivem nos branches arquivados. Se uma referência
 parece faltante, provavelmente está noutro branch.
 
-## ADRs são registro histórico imutável
+## ADRs — decisões vigentes e histórico das variantes arquivadas
 
-`docs/decisions/` contém os ADRs. **Não reescreva o contexto técnico de
-um ADR para refletir o estado atual** — eles registram a decisão da
-época. Especificamente:
+`docs/decisions/` contém os ADRs, no formato (Status / Date / Context /
+Decision / Alternatives Considered / Consequences / Notas). Regras:
 
 - ADRs 001, 002, 005, 006, 007 (presentes neste branch) foram escritos
   para o bípede/quadrúpede no WROOM-32E-N4 (sem PSRAM, com relay de
   smartphone). Referências a "WROOM", "`ACB_Biped_Robot`", "4 servos",
-  "relay" são intencionais e corretas para a decisão histórica.
+  "relay" são intencionais e corretas para a decisão histórica —
+  **não reescreva** esses ADRs.
 - **ADRs 016–024 pertencem à variante Tamagotchi** neste branch: 016
-  (sem relay), 017 (câmera), 018 (Core + contrato), 019 (hardware
-  CoreS3), 020 (OTA), 021 (firmware xiaozhi), 022 (Nuvem), 023 (pet
-  vivo), 024 (CI GitHub Actions). ADRs 003, 004 e 008–015 existem no
-  branch `quadrupede`.
-- Para criar um novo ADR, siga o formato dos existentes (Status / Date /
-  Context / Decision / Alternatives Considered / Consequences / Notas).
+  (sem relay), 017 (câmera), 018 (comportamento no xiaozhi-server), 019
+  (hardware CoreS3), 020 (OTA), 021 (firmware xiaozhi), 022 (Nuvem),
+  023 (pet vivo), 024 (CI GitHub Actions). ADRs 003, 004 e 008–015
+  existem no branch `quadrupede`.
+- **ADRs ativos refletem a decisão vigente.** Quando o dono muda a
+  arquitetura, ele pode mandar ajustar o ADR no lugar — nesse caso,
+  reescreva-o por completo (contexto, decisão, alternativas,
+  consequências), anote a reescrita no campo Date e deixe o histórico
+  no git. Sem direção explícita do dono, trate um ADR como decisão
+  vigente e discorde de mudanças que conflitem com ele.
 
 ## Regras requeridas — Firmware (ADR-019, ADR-021)
 
@@ -161,26 +164,34 @@ xiaozhi e se aplicam ao conteúdo do nosso fork dentro de `firmware/`.
 - Antes de adicionar código, **leia a implementação mais próxima que já
   existe** e prefira a camada mais estreita que ownership do recurso.
 
-## Regras requeridas — Core (ADR-018, ADR-023)
+## Regras requeridas — Nuvem / comportamento do pet (ADR-018, ADR-022, ADR-023)
 
-O Core é um serviço TypeScript (Hono + `@modelcontextprotocol/sdk` +
-SQLite) modelado em `@modelcontextprotocol/typescript-sdk/examples/hono/`.
-Regras detalhadas em `core/AGENTS.md`. Resumo aqui:
+O comportamento do pet é **código Python nativo do fork da Nuvem**
+(`esp32-server/upstream`, fork de `xinnan-tech/xiaozhi-esp32-server`).
+Regras:
 
-- **Estado cloud-primary.** O estado canônico do pet vive no SQLite do
-  Core. No MVP **não há fallback NVS** no dispositivo.
+- **Módulo isolado.** O comportamento (estado, stats, decay, estágios,
+  tools, handlers de trigger) vive num módulo próprio dentro do fork,
+  sem espalhar lógica pelo core upstream — o upstream Python é
+  movimentado e o merge precisa ser barato.
+- **Estado cloud-primary no servidor.** O estado canônico do pet vive
+  na persistência do servidor. No MVP **não há fallback NVS** no
+  dispositivo.
 - **18 stats, 17 editáveis + `health` derivado.** `health` nunca é
   editado direto — é calculado a partir dos outros. Decay de stats é
-  função pura de timestamp, não de wall-clock com efeitos colaterais.
-- **Estágios Filhote→Jovem→Adulto** via XState v5 (transições auditáveis,
-  sem morte do pet).
-- **Tools expostas via HTTP REST.** O Core é um HTTP server (Hono). Um
-  adapter Python interno no xiaozhi-server (`plugins_func/functions/
-  pet_tools.py`) registra cada tool como `ToolType.SYSTEM_CTL`, chama o
-  Core via HTTP, e usa `conn` para enviar ações ao device. O LLM chama
-  via function calling. A Nuvem é um provedor de capacidades, não
-  acoplada ao Core.
-- Código em inglês, comentários em pt-BR, testes em Vitest.
+  função pura de timestamp (on-demand, sem cron), não de wall-clock com
+  efeitos colaterais.
+- **Estágios Filhote→Jovem→Adulto** com transições determinísticas e
+  auditáveis, sem morte do pet.
+- **Tools do pet**: `plugins_func`, `ToolType.SYSTEM_CTL`, recebem
+  `conn`; mutam o estado localmente e enviam `pet_action` JSON ao
+  device via `conn`; retornam `Action.REQLLM` para o LLM compor a
+  resposta. O LLM chama via function calling.
+- **Triggers não-vozeados** (sacudida, botão, proximidade, RTC wake)
+  chegam como mensagens no protocolo WSS do xiaozhi e são tratados por
+  handler interno do fork — sem passar pelo LLM.
+- Código em inglês, comentários em pt-BR, testes em pytest no
+  submódulo.
 
 ## Regras requeridas — OTA (ADR-020)
 
@@ -193,32 +204,18 @@ Regras detalhadas em `core/AGENTS.md`. Resumo aqui:
 - A chave **privada nunca entra no repo** (`ota/keys/` privada é
   gitignored); a pública é tracked.
 
-## Regras requeridas — Contrato (`packages/contract/`)
-
-- Schemas Zod para **Batch** (envelope versionado de Triggers) e **Plano
-  de Ações** (resposta ordenada do Core).
-- Gerar JSON Schema a partir do Zod para o Android consumir via
-  `kotlinx.serialization` (ou quicktype). O contrato é a fonte da verdade
-  compartilhada entre Core e Plataforma.
-- Mudar o contrato = novo ADR se for breaking; bump de versão do Batch
-  em qualquer caso.
-
 ## Comandos essenciais
 
-O repo é multi-linguagem (TS, Kotlin, ESP-IDF, Python da Nuvem). O
+O repo é multi-linguagem (ESP-IDF do firmware, Python da Nuvem). O
 `Justfile` na raiz orquestra tudo; prefira `just <recipe>` aos comandos
 diretos quando existir.
 
 | Tarefa | Comando | Onde |
 |:---|:---|:---|
-| Testes do Core (TS) | `pnpm --filter core test` ou `just core-test` | raiz |
-| Lint/format TS | `pnpm biome check .` ou `just lint` | raiz |
-| Testes do contrato | `pnpm --filter contract test` | raiz |
-| Testes do app Android | `./gradlew test` (unit) / `connectedAndroidTest` | `android/` |
-| Build do app | `./gradlew assembleDebug` | `android/` |
-| Build do firmware | `source esp-idf/export.sh && python3 scripts/build.py m5stack/cores3-felipe --name felipe` | `firmware/` |
-| Regenerar locales | `python3 scripts/gen_lang.py` | `firmware/` |
-| Nuvem (local) | `docker compose -f esp32-server/docker-compose.override.yml up` | raiz |
+| Build do firmware | `just firmware-build` (exige ESP-IDF sourced) | raiz |
+| Flash no CoreS3 | `just firmware-flash` | raiz |
+| Regenerar locales | `just firmware-locales` | raiz |
+| Nuvem (local) | `just esp32-server-up` / `just esp32-server-check` | raiz |
 | Validar manifest OTA | `just ota-manifest-check` | raiz |
 
 Se um comando não existe ainda (firmware ESP-IDF não configurado neste
@@ -227,27 +224,26 @@ Reporte o que executou e o que ainda precisa de setup.
 
 ## Verificação por tipo de mudança
 
-A CI (ADR-024) roda em todo push/PR: jobs `ts`, `android`, `docker`,
-`ota-manifest` em `.github/workflows/ci.yml`; releases OTA em
-tags via `.github/workflows/release.yml`. A CI não substitui a
-verificação local — rode os comandos abaixo antes de push. Após cada
-mudança, execute o que se aplica e **reporte o que verificou e
-o que ainda precisa de hardware/setup extra** — um build que passa não é
-validação de hardware.
+A CI (ADR-024) roda em todo push/PR: jobs `docker`, `ota-manifest` em
+`.github/workflows/ci.yml`; releases OTA em tags via
+`.github/workflows/release.yml`. A CI não substitui a verificação local
+— rode os comandos abaixo antes de push. Após cada mudança, execute o
+que se aplica e **reporte o que verificou e o que ainda precisa de
+hardware/setup extra** — um build que passa não é validação de hardware.
 
 - **Mudou `.md` (docs/ADRs/CONTEXT)**: confira que nenhum link aponta
   para arquivo removido. Patterns de resíduo conhecidos: `tutorial/`,
   `hardware/mcu/`, `hardware/esp32-cam/`, `pinout-quadrupede`,
-  `esp32-wroom-32e-n4`.
-- **Mudou código TS (core/contract)**: `pnpm biome check` + `pnpm test`
-  na package afetada.
-- **Mudou código Kotlin (android/)**: `./gradlew test`.
+  `esp32-wroom-32e-n4`, `android/`, `core/`, `packages/contract/`,
+  `018-tamagotchi-comportamento-mora-no-core-typescript`.
+- **Mudou o fork da Nuvem** (`esp32-server/upstream`): rode o pytest do
+  submódulo que cobre o módulo tocado; se o compose mudou,
+  `docker compose config` valida o merge — não suba containers sem
+  pedir.
 - **Mudou firmware**: build via `scripts/build.py` (exige ESP-IDF
   sourced). Se não tiver ESP-IDF neste ambiente, declare que o build não
   foi executado e liste o que precisaria do CoreS3 físico.
-- **Mudou o contrato**: bump de versão do Batch + testes em core e
-  android (ambos consomem o schema).
-- **Mudou config da Nuvem**: `docker compose config` valida o override;
+- **Mudou config da Nuvem**: `just esp32-server-check` valida o merge;
   não suba containers sem pedir.
 - **Mudou o manifest OTA** (`ota/manifest/`): `just ota-manifest-check`.
   Release OTA: tag `vX.Y.Z` dispara o `release.yml` (exige o secret
@@ -267,20 +263,16 @@ validação de hardware.
   usuário não pediu. Não crie `README.md` ou `*.md` de-documentação
   preventivamente.
 - **Prefira acesso direto de chave** a `.get()`/`??` quando a chave
-  ausente seria um bug de contrato — surpreção de violação esconde erro.
+  ausente seria um bug — surpreção de violação esconde erro.
 - **Pergunte quando ambíguo**; prossiga quando o caminho é claro e
   reversível.
 
 ## Subsistemas com AGENTS.md próprio
 
-- `android/AGENTS.md` — papel como primeira Plataforma (ADR-018), stack
-  Kotlin/Compose, comandos Gradle.
-- `core/AGENTS.md` — contrato, estado cloud-primary, 18 stats, HTTP
-  endpoints (adapter Python bridgeia ao LLM), XState, SQLite, convenções TS.
-
-Nuvem, OTA, firmware e `packages/contract/` não têm AGENTS.md próprio —
-suas regras vivem aqui. Crie um AGENTS.md aninhado só quando o
-subsistema acumular regras que mereçam isolamento (padrão xiaozhi).
+Nenhum subsistema tem `AGENTS.md` aninhado hoje — Nuvem (`esp32-server/`),
+OTA, firmware e o restante seguem as regras deste arquivo. Crie um
+AGENTS.md aninhado só quando o subsistema acumular regras que mereçam
+isolamento (padrão xiaozhi).
 
 ## Specs (specifications)
 
@@ -326,10 +318,11 @@ corta todas as camadas (schema, API, UI, tests) e é demoable por si só.
 Declara `Blocked by` (tickets que devem completar antes) e
 `Status: ready-for-agent`. O template está na skill `/to-tickets`.
 
-Feature atual: `fase-1-core-android` (Core TS/Bun + xiaozhi-server +
-Android, 6 tickets). Infra já especificada: spec 07 (CI GitHub Actions,
-ADR-024) e spec 08 (self-test pós-OTA — executa na Fase 2). Fase 2
-(CoreS3) inicia após o hardware chegar.
+Feature atual: **comportamento do pet no xiaozhi-server** (ADRs
+018/022/023). Specs ativas: 03 (config da Nuvem), 07 (CI GitHub
+Actions, ADR-024) e 08 (self-test pós-OTA — aguarda o hardware CoreS3).
+As specs/tickets 01, 02, 04, 05 e 06 (contrato, Core, adapter Python de
+ponte, Android) foram removidas junto com o código que descreviam.
 
 ## `tutorial_raw/` é gitignored
 
@@ -344,12 +337,6 @@ decisões futuras no projeto. Mantenha enxuto — quando esta seção passar
 de ~30 linhas, promova o conteúdo a um ADR ou a uma regra na seção
 pertinente e limpe aqui.
 
-- 2026-09-02: [core] `better-sqlite3` 13.0.3 segfaulta no dlopen com Node
-  22.13 nesta máquina (build do umbrel e oficial; ok no Node 24). Rodar o
-  Core com `~/.local/opt/node-v24.3.0-linux-x64/bin/node dist/main.js`
-  após `pnpm --filter core build` (porta default 8090, `CORE_PORT` para
-  trocar). Nesta rede, a máquina dev é `192.168.1.21` — o app Android
-  deve apontar o coreUrl para ela, não para o default `192.168.1.100`.
 - 2026-09-14: [esp32-server] O `prompt_manager.py` envolve o prompt no
   template `agent-base-prompt.txt` (upstream, centrado em zh) e injeta
   `{{language}}` a partir de `config.TTS.<provider>.language` — se a

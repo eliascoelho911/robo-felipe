@@ -20,9 +20,8 @@
 #     dentro do contêiner — o servidor lê este arquivo e faz merge sobre o
 #     config.yaml do upstream, aplicando a configuração pt-BR do Robô Felipe.
 #  2. Ajusta o fuso para America/Sao_Paulo (pt-BR).
-#  3. Mapeia host.docker.internal para o host, permitindo que o contêiner
-#     alcance o Core (Hono) rodando no host em :3000 (ver CORE_HTTP_URL em
-#     config/config.yaml).
+#  3. Fixa a porta WSS do host em 8091 (dentro do contêiner o servidor
+#     continua na 8000).
 #
 # SEGREDOS: o mount abaixo usa `./config/.config.yaml` (gitignored). Copie
 # `config/config.yaml` para `.config.yaml` e preencha as chaves reais lá;
@@ -43,7 +42,5 @@ services:
     ports: !override
       - "8091:8000"
       - "8003:8003"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - ./config/.config.yaml:/opt/xiaozhi-esp32-server/data/.config.yaml:ro

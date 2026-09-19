@@ -20,9 +20,9 @@ O ADR-017 ampliou o escopo para incluir a **câmera GC0308** e o sensor de
 proximidade **LTR-553ALS-WA** (que o CoreS3 traz na mesma fita ribbon),
 supersedendo a menção "câmera indesejada" do ADR-016.
 
-O ADR-018 fixou a divisão funcional: o **comportamento** mora num Core
-em TypeScript auto-hospedado; a **Plataforma** (o CoreS3, agora) só
-detecta Triggers, envia Batches e executa Planos de Ações. Ou seja, o
+O ADR-018 fixou a divisão funcional: o **comportamento** mora no
+xiaozhi-server (Nuvem); a **Plataforma** (o CoreS3, agora) só detecta
+Triggers e executa as ações recebidas. Ou seja, o
 hardware só precisa ser bom em **detectar e executar**, não em *decidir*.
 
 A documentação de referência `hardware/cores3/CoreS3-capacidades.md`

@@ -1,4 +1,4 @@
-# ADR-023: PET vivo — estado, stats, decay, estágios e catálogo de MCP tools
+# ADR-023: PET vivo — estado, stats, decay, estágios e catálogo de tools
 
 ## Status
 
@@ -6,13 +6,14 @@ Accepted
 
 ## Date
 
-2026-08-31
+2026-08-31 (ajustada em 2026-09-19: estado e tools passam a morar no xiaozhi-server — ver ADR-018)
 
 ## Context
 
-O [ADR-018](018-tamagotchi-comportamento-mora-no-core-typescript.md) decidiu
-que o **comportamento** do Tamagotchi mora num Core em TypeScript
-auto-hospedado, acessado pela Plataforma via HTTPS. Deixou explicitamente em
+O [ADR-018](018-tamagotchi-comportamento-mora-no-xiaozhi-server.md) decidiu
+que o **comportamento** do Tamagotchi mora no xiaozhi-esp32-server
+(Nuvem, fork nosso), que concentra o pipeline de voz e a conexão com o
+device. Deixou explicitamente em
 aberto, como tópico para a conversa "PET vivo":
 
 > gerenciamento de estado e comportamento (stats, decay, estágios,
@@ -23,12 +24,13 @@ decidiu a UI de pet (LVGL + camada de pet, sprites de olhos/boca, barras de
 stats via `lv_bar`, animações via `lv_anim`) e remeteu o "design de
 stats/decay do catode32" para esta ADR. O
 [ADR-022](022-tamagotchi-nuvem-xiaozhi-server-com-provedores-pt-br.md)
-estabeleceu o Core como **MCP tool provider** no xiaozhi-server e deixou o
-catálogo de tools (`pet.dance()`, `pet.get_state()`, etc.) para esta ADR.
+estabeleceu a Nuvem como host do comportamento (plugins internos com
+`conn`) e deixou o catálogo de tools (`pet.dance()`, `pet.get_state()`,
+etc.) para esta ADR.
 
 Esta ADR fecha todas essas pendências: define o modelo de estado do pet
 (stats, estágios, decay, sickness, moods), onde o estado mora, como ele
-avança no tempo, e o catálogo completo de MCP tools que o Core expõe ao LLM.
+avança no tempo, e o catálogo completo de tools que o servidor expõe ao LLM.
 
 ### Achados da inspeção dos motores de referência (2026-08-31)
 
@@ -57,11 +59,11 @@ morte + rebirth + egg hatch. NVS via `Preferences`. AutoSave 30s. Timers em
 
 **O Robô Felipe tem um modelo de pet vivo com 18 stats (health derivado),
 estágios sem morte (Filhote→Jovem→Adulto), decay em tiers mistos
-(daily/weekly/monthly/very-slow), estado canônico no Core (cloud-primary,
-sem fallback NVS no MVP), e um catálogo de MCP tools exposto ao LLM.** O
-design é inspirado no `moonbench/catode32` (estrutura de stats, health
-derivado, asymptotic damping, sickness tiers, decay tiers), adaptado para
-um cachorro-robô pt-BR sem morte.
+(daily/weekly/monthly/very-slow), estado canônico no xiaozhi-server
+(cloud-primary, sem fallback NVS no MVP), e um catálogo de tools exposto
+ao LLM.** O design é inspirado no `moonbench/catode32` (estrutura de
+stats, health derivado, asymptotic damping, sickness tiers, decay
+tiers), adaptado para um cachorro-robô pt-BR sem morte.
 
 ### 1. Modelo de stats — 18 stats com health derivado
 
@@ -164,34 +166,35 @@ O pet evolui por **maturidade** (stat monthly) + tempo de vida:
   Sobrinho nunca perde o pet permanentemente.
 - **Egg hatch** (TamaFi) não adotado — o pet começa como Filhote direto
   (não como ovo), para reduzir fricção no 1º uso.
-- **Idade** = dias desde a criação (relógio server-side no Core).
+- **Idade** = dias desde a criação (relógio server-side no servidor).
 
-### 4. Estado canônico — Core-primary, sem fallback NVS no MVP
+### 4. Estado canônico — server-primary, sem fallback NVS no MVP
 
 O estado canônico do pet (stats, estágio, sickness, maturidade, idade)
-**mora no Core** (TypeScript, cloud-side, ADR-018). O Core é a source of
+**mora no xiaozhi-server** (Nuvem, ADR-018). O servidor é a source of
 truth.
 
 - **Sem snapshot NVS no device no MVP.** O dispositivo não guarda estado do
-  pet localmente — consulta o Core (via HTTPS) para saber o mood/stats
-  atuais ao renderizar a UI.
+  pet localmente — obtém o mood/stats atuais do servidor (mensagens do
+  protocolo WSS) para renderizar a UI.
 - **Sem `advanceStats` local no device.** O device não calcula decay — o
-  Core faz (server-side, ver §5).
-- **Pet "congela" se offline.** Sem internet, o device não consulta o Core
-  e entra em **modo degradado offline** (ADR-016): mostra animação fixa
-  ("dormindo" ou "esperando"), sem stats atualizadas. O Core continua
-  rodando server-side e avançando stats independentemente — quando o device
-  volta online, consulta o Core e vê o estado atualizado.
+  servidor faz (server-side, ver §5).
+- **Pet "congela" se offline.** Sem internet, o device não fala com o
+  servidor e entra em **modo degradado offline** (ADR-016): mostra animação fixa
+  ("dormindo" ou "esperando"), sem stats atualizadas. O servidor continua
+  rodando e avançando stats independentemente — quando o device
+  volta online, sincroniza e vê o estado atualizado.
 - **Fallback offline (NVS snapshot + `advanceStats` local no wake do RTC)**
   é **tópico futuro**, explicitamente fora do escopo do MVP. A
   complexidade de sincronização (dirty flags, merge, conflict resolution)
   não se justifica antes de validar o modelo cloud-primary.
 
-**Persistência no Core**: o estado do pet é persistido na persistência do
-próprio Core (decisão de implementação — JSON file, SQLite ou Postgres,
-conforme a stack do Core evoluir). Cada pet tem um `pet_id` (gerado no
-provisioning) e um documento de estado com `last_tick` (timestamp ISO 8601
-do último `advanceStats`).
+**Persistência no servidor**: o estado do pet é persistido na
+persistência do próprio xiaozhi-server (decisão de implementação do
+módulo do pet — o stack da Nuvem já inclui MySQL e volumes nomeados no
+compose, ADR-022). Cada pet tem um `pet_id` (derivado do device-id) e um
+documento de estado com `last_tick` (timestamp ISO 8601 do último
+`advanceStats`).
 
 ### 5. Decay em tiers mistos + advanceStats server-side
 
@@ -209,14 +212,15 @@ diferentes rates de decaimento por tempo decorrido:
 deve sentir o pet "com fome" dentro de algumas horas, mas não ver stats
 despencarem em minutos.)
 
-**`advanceStats(elapsedSeconds)`** roda **server-side no Core**, não no
-device. É chamado **on-demand**: quando o Core recebe um Batch ou uma tool
-call, ele calcula `elapsed = now - last_tick`, aplica decay por tier para
+**`advanceStats(elapsedSeconds)`** roda **server-side no servidor**, não no
+device. É chamado **on-demand**: quando o servidor recebe uma mensagem de
+trigger do device, uma tool call do LLM ou um pedido de estado, ele
+calcula `elapsed = now - last_tick`, aplica decay por tier para
 cada stat, atualiza `last_tick = now`, e persiste. Não há cron/scheduler
 no MVP — o estado só avança quando alguém consulta ou interage.
 
 Isto significa que se o device não interage por dias, as stats só avançam
-na próxima consulta (o Core calcula retroativamente). O resultado é o
+na próxima consulta (o servidor calcula retroativamente). O resultado é o
 mesmo que um tick periódico, mas sem infra de scheduler.
 
 ### 6. Moods (derivado das stats)
@@ -244,10 +248,10 @@ A UI renderiza a expressão facial correspondente ao mood (sprites de
 olhos/boca via `lv_image`, ADR-021). O LLM recebe o mood como contexto
 (`pet.get_state()` inclui `mood`) para moldar o tom das respostas.
 
-### 7. Catálogo de MCP tools
+### 7. Catálogo de tools
 
-O Core expõe tools ao LLM via MCP endpoint do xiaozhi-server
-(`ws://host:8004/mcp_endpoint/`, ADR-022). O LLM chama via function calling
+O servidor expõe tools ao LLM via function calling (plugins internos,
+`ToolType.SYSTEM_CTL`, com `conn` — ADR-022 emenda, ADR-018). O LLM chama
 quando reconhece intents de ação na fala do Sobrinho.
 
 #### Read (consulta, não muta estado)
@@ -257,9 +261,9 @@ quando reconhece intents de ação na fala do Sobrinho.
 | `pet.get_state()` | `{stage, mood, health, stats{...}, age_days, last_interaction, sickness_tier}` | LLM consulta para moldar resposta ("como você está?") |
 | `pet.get_mood()` | `string` (mood atual) | atalho para contexto rápido |
 
-#### Write (muta estado, retorna Plano de Ações)
+#### Write (muta estado, envia Ações ao device)
 
-| Tool | Efeito em stats | Plano de Ações retornado |
+| Tool | Efeito em stats | Ações enviadas ao device |
 |:--|:--|:--|
 | `pet.feed(food?)` | +fullness, +happiness, +affection | `expressar_emocao{felicidade}` + `falar{texto}` |
 | `pet.play(game?)` | +playfulness, +happiness, +sociability, -energy | `dançar` + `falar{texto}` |
@@ -273,22 +277,26 @@ quando reconhece intents de ação na fala do Sobrinho.
 | `pet.get_dizzy()` | -focus (temporário) | `ficar_tonto` (Ação direta) |
 
 As Ações (`falar`, `dançar`, `expressar_emocao`, `ficar_tonto`, `dormir`)
-são as definidas em `CONTEXT.md` e ADR-018. O `falar{texto}` retorna texto
-que a Plataforma renderiza como TTS (Android = TTS nativo pt-BR; CoreS3 =
-protocolo xiaozhi, ADR-018/022).
+são as definidas em `CONTEXT.md`. As não-verbais saem pelo `conn`
+(`pet_action` JSON sobre o WSS); o `falar{texto}` é texto que o próprio
+pipeline de voz do servidor sintetiza via TTS (EdgeTTS pt-BR, ADR-022) —
+o tool retorna o contexto ao LLM (`Action.REQLLM`) e o texto vira áudio
+na fila de TTS.
 
 O LLM decide quando chamar uma tool: se o Sobrinho diz "vamos brincar", o
-LLM reconhece a intent e chama `pet.play()`; o Core atualiza stats e
-retorna o Plano (`dançar` + `falar{yay!}`); o device executa. Se o Sobrinho
-pergunta "como você está?", o LLM chama `pet.get_state()` e usa o resultado
-para compor a resposta textual.
+LLM reconhece a intent e chama `pet.play()`; a tool atualiza stats e o
+device recebe `dançar` + o LLM fala o texto. Se o Sobrinho
+pergunta "como você está?", o LLM chama `pet.get_state()` e usa o
+resultado para compor a resposta textual.
 
-#### Triggers não-vozeados (Batch → Core, não MCP)
+#### Triggers não-vozeados (mensagem WSS → servidor, sem LLM)
 
 Triggers detectados pelo device sem fala (sacudida, botão, proximidade, RTC
-wake) não passam pelo LLM — vão direto ao Core via HTTPS/Batch (ADR-018):
+wake) não passam pelo LLM — vão direto ao servidor como mensagens no
+protocolo WebSocket do xiaozhi (ADR-018), tratadas por um handler interno
+do fork:
 
-| Trigger | Batch payload | Core retorna (Plano) |
+| Trigger | Payload da mensagem | Resposta do servidor |
 |:--|:--|:--|
 | `sacudida` (IMU BMI270) | `{type: "shake", ts}` | `ficar_tonto` ou `expressar_emocao{assustado}` |
 | `botão` (toque rápido) | `{type: "button", ts}` | `falar{oi!}` ou `feed` (configurável) |
@@ -296,34 +304,35 @@ wake) não passam pelo LLM — vão direto ao Core via HTTPS/Batch (ADR-018):
 | `rtc_wake` (timer horário) | `{type: "rtc_wake", ts}` | `falar{bom dia!}` + estado atualizado (advanceStats) |
 
 O `rtc_wake` é especial: o device acorda do deep-sleep pelo timer BM8563
-(ADR-021), envia um Batch ao Core, o Core roda `advanceStats` (decay por
-tempo decorrido), e retorna um Plano de Ações (saudação + estado atualizado
-para a UI). Se offline, o device mostra "dormindo" e volta a dormir (sem
+(ADR-021), envia a mensagem ao servidor, que roda `advanceStats` (decay por
+tempo decorrido) e responde com a saudação + estado atualizado
+para a UI. Se offline, o device mostra "dormindo" e volta a dormir (sem
 estado atualizado — ver §4).
 
 ### 8. Integração com a UI do firmware (ADR-021)
 
 O firmware (xiaozhi-esp32 + customizações, ADR-021) **não detém o estado**
-— consulta o Core para mood/stats ao renderizar. A camada de pet em LVGL:
+— obtém mood/stats do servidor ao renderizar. A camada de pet em LVGL:
 
 - **Face do pet**: sprites de olhos/boca selecionados pelo mood (recebido
-  do Core via `pet.get_state()` ou incluso no Plano de Ações).
+  do servidor — snapshot incluso nas mensagens `pet_action` ou numa
+  mensagem de estado do protocolo WSS).
 - **Barras de stats**: `lv_bar` com as 4-5 stats principais (saciedade,
   energia, felicidade, saúde + sickness). As 13 stats restantes acessíveis
   via menu (ou implícitas no comportamento — o LLM as usa, a UI não mostra
   todas).
-- **Animações**: `lv_anim` para executar as Ações do Plano (dançar, ficar
+- **Animações**: `lv_anim` para executar as Ações recebidas (dançar, ficar
   tonto, expressar emoção).
-- **Estado no boot**: o device conecta WiFi → consulta `pet.get_state()` →
-  renderiza face + barras. Se offline, mostra face "dormindo" + barras
-  cinza (sem dados).
+- **Estado no boot**: o device conecta WiFi → sincroniza com o servidor
+  (estado atual via WSS) → renderiza face + barras. Se offline, mostra
+  face "dormindo" + barras cinza (sem dados).
 
 ### 9. Integração com o system prompt (ADR-022)
 
 O `prompt` field do xiaozhi-server (ADR-022) inclui o estado do pet como
-contexto dinâmico. O Core, ao registrar tools no MCP endpoint, pode
-injetar o estado atual no `{{dynamic_context}}` do template
-`agent-base-prompt.txt`:
+contexto dinâmico. O módulo do pet no servidor injeta o estado atual no
+`{{dynamic_context}}` do template `agent-base-prompt.txt` antes de cada
+turno de conversa:
 
 ```
 Estado atual do Felipe: estágio=Jovem, mood=brincalhão,
@@ -356,16 +365,16 @@ para estado fresco a qualquer momento.
 - **Rejeitado pelo usuário:** estágios sem morte. O pet fica doente/triste
   se negligenciado, mas recupera com cuidado — nunca morre.
 
-### Estado NVS-primary, Core stateless
+### Estado NVS-primary, servidor stateless
 
-- **Prós:** pet sempre vivo (NVS); funciona offline; Core mais simples
-  (stateless).
+- **Prós:** pet sempre vivo (NVS); funciona offline; módulo do pet mais
+  simples (stateless).
 - **Contras:** contraria o espírito do ADR-018 (iterar comportamento sem
   reflash); mudar decay rates / adicionar stats exige OTA de firmware; o
   estado do pet não é consultável server-side (LLM não sabe o mood sem
   perguntar ao device).
-- **Rejeitado pelo usuário:** Core-primary sem fallback no MVP. O estado
-  mora no Core para iterar sem reflash; fallback NVS fica para depois.
+- **Rejeitado pelo usuário:** server-primary sem fallback no MVP. O estado
+  mora no servidor para iterar sem reflash; fallback NVS fica para depois.
 
 ### Decay em minutos (demo acelerada, como TamaFi)
 
@@ -377,27 +386,28 @@ para estado fresco a qualquer momento.
   alinhados ao deep-sleep horário. O pet sente "realista" — fome em horas,
   evolução em dias/semanas.
 
-### Catode32 como base de código (portar MicroPython → TypeScript)
+### Catode32 como base de código (portar MicroPython → Python do fork)
 
 - **Prós:** 18 stats + 29 behaviors + sickness + decay tiers já modelados;
   código MIT reutilizável.
-- **Contras:** catode32 é **MicroPython** (não TypeScript); portar para TS
-  é reescrever; o modelo de catode32 é para gato (behaviors como
+- **Contras:** catode32 é **MicroPython** (não CPython); portar é
+  reescrever; o modelo de catode32 é para gato (behaviors como
   `kneading`, `chattering`, `zoomies` são felinos); arte é CC-BY-NC-ND.
-- **Rejeitado para implementação:** o catode32 é **referência de design**
+- **Rejeitada para implementação:** o catode32 é **referência de design**
   (estrutura de stats, health derivado, damping, sickness tiers, decay
-  tiers), não base de código. O Core implementa o modelo em TypeScript do
-  zero, inspirado no design.
+  tiers), não base de código. O módulo do pet implementa o modelo em
+  Python do zero, inspirado no design.
 
 ### TamaFi como base de código (C++ no firmware)
 
 - **Prós:** MIT, ESP32-S3, NVS-persistente, C++; já modela estágios +
   morte + rebirth.
-- **Contras:** ADR-018 moveu o estado para o Core (cloud, TS) — não faz
-  sentido ter um engine de pet em C++ no firmware se o estado mora no Core.
+- **Contras:** ADR-018 moveu o estado para o servidor (cloud) — não faz
+  sentido ter um engine de pet em C++ no firmware se o estado mora no
+  servidor.
   TamaFi tica em `millis()` (uptime), sem RTC catch-up. Alimentação por
   WiFi scan é inadequada.
-- **Rejeitado:** o estado mora no Core (ADR-018); TamaFi como engine
+- **Rejeitado:** o estado mora no servidor (ADR-018); TamaFi como engine
   on-device é incompatível com essa arquitetura. O design de stats/estágios
   do TamaFi (BABY→TEEN→ADULT→ELDER + morte) inspira o modelo, mas sem morte
   e adaptado para cachorro.
@@ -410,12 +420,12 @@ para estado fresco a qualquer momento.
   damping, sickness tiers e decay em tiers dá depth de simulação sem
   morte. O pet sente "vivo" e dinâmico, diferente de um modelo de 3 stats.
 - **Iteração sem reflash** — stats, decay rates, sickness thresholds e
-  estágios são código TypeScript no Core. Tunar o pet é editar o Core e
-  reiniciar o processo, não OTA de firmware.
+  estágios são código Python no fork do servidor. Tunar o pet é editar o
+  fork e reiniciar o processo, não OTA de firmware.
 - **LLM informado pelo estado** — o LLM recebe mood + stats como contexto
   (`pet.get_state()` ou `{{dynamic_context}}`) e molda respostas ao estado
   atual. O pet "sabe" que está com fome e pede comida.
-- **Separação limpa** — o Core detém estado e decide comportamento; o
+- **Separação limpa** — o servidor detém estado e decide comportamento; o
   firmware só renderiza UI e transporta áudio; o LLM é a junção via
   function calling. Cada componente tem uma responsabilidade.
 - **Sem morte = seguro para 8 anos** — o Sobrinho nunca perde o pet
@@ -423,8 +433,9 @@ para estado fresco a qualquer momento.
   recuperável.
 - **Catálogo de tools definido** — fecha a pendência do ADR-022. O LLM
   sabe quais tools pode chamar e o que cada uma faz.
-- **MCP nativo** — o xiaozhi-server já tem MCP endpoint (ADR-022); o Core
-  só registra as tools. Sem glue de protocolo custom.
+- **Plugins nativos** — o xiaozhi-server já registra tools internas com
+  `conn` (ADR-022); o módulo do pet só adiciona as suas. Sem glue de
+  protocolo custom.
 
 ### Negativas
 
@@ -433,9 +444,9 @@ para estado fresco a qualquer momento.
   mostra "dormindo". Isto é **aceitável para o MVP** (validar cloud-primary
   primeiro), mas é uma limitação UX real para um pet de bolso que o
   Sobrinho leva a qualquer lugar. Fallback NVS é tópico futuro explícito.
-- **Dependência do Core estar no ar** — se o Core cai, o pet não funciona
-  (não consulta estado, não recebe Planos). O Core precisa ser always-on
-  (PC do autor → VPS, ADR-022). Sem HA no MVP.
+- **Dependência do servidor estar no ar** — se o servidor cai, o pet não
+  funciona (voz e pet moram nele, ADR-022). Sempre-on (PC do autor →
+  VPS). Sem HA no MVP.
 - **18 stats é complexo de balancear** — tuning de decay rates, sickness
   thresholds, asymptotic damping, e interações entre stats exige
   experimentação. O modelo é rico mas pode precisar de várias iterações
@@ -446,8 +457,8 @@ para estado fresco a qualquer momento.
   "lealdade" ou "serenidade" como barras, mas o pet age diferente conforme
   esses valores.
 - **`advanceStats` on-demand não é real-time** — se ninguém consulta o
-  Core por dias, as stats só avançam na próxima consulta. O resultado é
-  correto (decay retroativo), mas o Core não "sabe" o estado entre
+  servidor por dias, as stats só avançam na próxima consulta. O resultado é
+  correto (decay retroativo), mas o servidor não "sabe" o estado entre
   consultas. Para um cron de telemetria/monitoramento, seria preciso um
   scheduler — fora do escopo do MVP.
 - **Sickness severe sem morte** — o pet em estado severe (deitado, quase
@@ -455,40 +466,40 @@ para estado fresco a qualquer momento.
   indicar claramente "estou doente, preciso de cuidado" (ícone de
   curativo, não face de morte).
 - **Tools write mutam estado sem transação** — se o LLM chama `pet.feed()`
-  e `pet.play()` em rápida sucessão, o Core precisa handle de concorrência
-  (race condition em stats). Mitigação: tools são síncronas no Core (uma
-  por vez) ou usam lock por `pet_id`.
+  e `pet.play()` em rápida sucessão, o módulo do pet precisa handle de
+  concorrência (race condition em stats). Mitigação: tools são síncronas
+  no servidor (uma por vez) ou usam lock por `pet_id`.
 - **Catode32 como referência de design, não código** — o modelo é
-  reescrito em TypeScript do zero. Se catode32 evolui (novos behaviors,
+  reescrito em Python do zero. Se catode32 evolui (novos behaviors,
   stats), não há merge automático — é acompanhamento manual.
 
 ## Notas
 
 - **Supersede parcial do research `tamagotchi-pet-engine-ui.md`**:
   - O research recomendava TamaFi como **base C++ on-device** + catode32
-    como referência de design. Esta ADR move o estado para o Core (cloud,
-    TS, ADR-018) — TamaFi como engine on-device é descartado. O **design
+    como referência de design. Esta ADR move o estado para o servidor
+    (cloud, ADR-018) — TamaFi como engine on-device é descartado. O **design
     de stats/decay/sickness do catode32** é confirmado como referência e
     adotado (adaptado).
   - O research recomendava M5GFX + TFT_eSPI como UI. ADR-021 já decidiu
-    LVGL + camada de pet — esta ADR confirma (a UI consulta o Core para
-    mood/stats).
+    LVGL + camada de pet — esta ADR confirma (a UI obtém o mood/stats do
+    servidor).
   - O gap de **RTC catch-up** (todos tica em millis()) é dissolvido: o
-    estado mora no Core (cloud), que tem relógio real; `advanceStats` é
+    estado mora no servidor (cloud), que tem relógio real; `advanceStats` é
     server-side on-demand. O device não precisa de RTC catch-up no MVP
     (sem estado local). O RTC do BM8563 é usado para wake timer
-    (deep-sleep) e timestamp de Batches, não para advanceStats local.
+    (deep-sleep) e timestamp de triggers, não para advanceStats local.
 - **Fecha a pendência do ADR-018** ("PET vivo" — estado/stats/decay/
-  estágios/persistência): estado no Core (cloud-primary), 18 stats, decay
-  em tiers, estágios sem morte, sem fallback NVS no MVP.
-- **Fecha a pendência do ADR-022** (catálogo de MCP tools): 2 read + 10
-  write tools definidas, + 4 triggers não-vozeados via Batch.
-- **Consistente com ADR-021** (firmware): a camada de pet em LVGL consulta
-  o Core para mood/stats; não detém estado. As Ações (`falar`, `dançar`,
+  estágios/persistência): estado no servidor (cloud-primary), 18 stats,
+  decay em tiers, estágios sem morte, sem fallback NVS no MVP.
+- **Fecha a pendência do ADR-022** (catálogo de tools): 2 read + 10
+  write tools definidas, + 4 triggers não-vozeados via mensagem WSS.
+- **Consistente com ADR-021** (firmware): a camada de pet em LVGL obtém
+  mood/stats do servidor; não detém estado. As Ações (`falar`, `dançar`,
   `expressar_emocao`, `ficar_tonto`, `dormir`) são as que o firmware
   executa via `lv_anim`/`lv_image`.
-- **Consistente com ADR-016** (sem relay): o Core é um serviço nosso na
-  rede, não um smartphone. O device termina TLS direto com o Core.
+- **Consistente com ADR-016** (sem relay): o servidor é um serviço nosso
+  na rede, não um smartphone. O device termina TLS direto com a Nuvem.
 - **Fallback offline (NVS + advanceStats local no wake RTC)** é tópico
   futuro explícito. Se a UX cloud-primary for insuficiente (pet "congela"
   demais), a próxima ADR pode adicionar snapshot NVS + decay local +
@@ -508,50 +519,48 @@ para estado fresco a qualquer momento.
   `src/entities/`) e `cifertech/TamaFi` (`TamaFi/TamaFi.ino`) verificados
   em 2026-08-31 via GitHub API.
 
-## Emenda (2026-08-31)
+## Emenda (2026-08-31, ajustada em 2026-09-19)
 
-### Padrão de integração: HTTP + adapter Python (não MCP)
+### Padrão de integração: plugins internos no xiaozhi-server (não MCP externo)
 
 A inspeção do código do `xinnan-tech/xiaozhi-esp32-server` (2026-08-31,
 ver ADR-022 emenda) revelou que **MCP servers externos não têm acesso ao
-`conn`** — a conexão WebSocket com o device. Sem `conn`, o Core não
-consegue enviar ações não-TTS (`dançar`, `expressar_emocao`,
+`conn`** — a conexão WebSocket com o device. Sem `conn`, nenhum serviço
+externo consegue enviar ações não-TTS (`dançar`, `expressar_emocao`,
 `ficar_tonto`) ao device.
 
-**Solução**: o Core é um **HTTP server** (Hono, REST). Um adapter Python
-interno no xiaozhi-server (`plugins_func/functions/pet_tools.py`)
-registra cada tool como `ToolType.SYSTEM_CTL`, chama o Core via HTTP
-para lógica de estado, e usa `conn` para enviar `pet_action` JSON ao
-device.
+**Solução**: as tools do pet são **plugins internos** do xiaozhi-server
+(`plugins_func`, `ToolType.SYSTEM_CTL`), parte do módulo de pet do fork
+(ADR-018). Cada tool muta o estado do pet localmente (mesmo processo,
+sem HTTP entre serviços nossos) e usa `conn` para enviar `pet_action`
+JSON ao device.
 
 ### O que muda no §7 (Catálogo de tools)
 
-- As **12 tools** (2 read + 10 write), seus efeitos em stats, e os
-  Planos de Ações retornados **permanecem idênticos**.
-- Os nomes das tools mudam de estilo MCP (`pet.feed()`) para endpoints
-  HTTP (`POST /pet/:id/feed`). O adapter Python registra cada endpoint
-  como uma function no xiaozhi-server.
-- Tool write: adapter chama Core HTTP → recebe Plano de Ações → envia
-  ações não-verbais via `conn.websocket.send({"type":"pet_action",...})`
-  → retorna `ActionResponse(Action.REQLLM, context, None)` → LLM gera
+- As **12 tools** (2 read + 10 write), seus efeitos em stats e as Ações
+  enviadas ao device **permanecem idênticos**.
+- Os nomes lógicos (`pet.feed()`, `pet.play()`, ...) são registrados
+  como funções no function calling do servidor; não há endpoints HTTP.
+- Tool write: muta o estado no servidor → envia ações não-verbais via
+  `conn.websocket.send({"type":"pet_action",...})` → retorna
+  `ActionResponse(Action.REQLLM, context, None)` → LLM gera
   texto → EdgeTTS.
-- Tool read: adapter chama Core HTTP → retorna state para o LLM como
-  contexto.
-- **Triggers não-vozeados** (§7, tabela final): **permanecem idênticos**
-  — sempre foram Batch→Core via HTTPS, não passam pelo LLM nem pelo
-  adapter.
+- Tool read: retorna o estado/mood para o LLM como contexto.
+- **Triggers não-vozeados** (§7, tabela final): chegam como **mensagens
+  no protocolo WSS do xiaozhi**, tratadas por um handler interno do fork
+  — não passam pelo LLM nem por function calling.
 
 ### O que muda no §9 (Integração com system prompt)
 
 O `{{dynamic_context}}` do template `agent-base-prompt.txt` é preenchido
-pelo adapter Python, que busca o state do Core via HTTP antes de cada
-turno de conversa (não pelo Core "registrando tools no MCP endpoint").
+pelo módulo do pet, que lê o estado localmente antes de cada turno de
+conversa.
 
 ### O que NÃO muda
 
 - **§1 (18 stats)**, **§2 (health + damping + sickness)**, **§3
-  (estágios sem morte)**, **§4 (Core-primary sem NVS)**, **§5 (decay
+  (estágios sem morte)**, **§4 (server-primary sem NVS)**, **§5 (decay
   tiers + advanceStats on-demand)**, **§6 (13 moods)**, **§8 (UI
   firmware)** — todas permanecem canônicas.
-- O catálogo de tools (nomes lógicos, efeitos, Planos retornados)
-  permanece — só o transporte muda (MCP → HTTP + adapter).
+- O catálogo de tools (nomes lógicos, efeitos, Ações enviadas)
+  permanece — só o transporte mudou (MCP externo → plugins internos).

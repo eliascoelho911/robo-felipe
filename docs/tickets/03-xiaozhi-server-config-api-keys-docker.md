@@ -4,8 +4,8 @@
 está configurado e rodando via Docker Compose. O `config/config.yaml`
 existente já tem `selected_module` completo (GroqASR, OpenAILLM/gpt-4o-mini,
 EdgeTTS, ChatGLMVLLM, SileroVAD, nomem, function_call), persona Robô Felipe
-pt-BR, `exit_commands` pt-BR, `wakeup_words` ["Felipe","ei Felipe"], e
-`CORE_HTTP_URL` apontando para o Core. Os placeholders de API keys
+pt-BR, `exit_commands` pt-BR e `wakeup_words` ["Felipe","ei Felipe"]. Os
+placeholders de API keys
 (`SUBSTITUA_POR_*_API_KEY`) são preenchidos com secrets reais (OpenAI,
 Groq, ChatGLM). O `docker-compose.override.yml` sobe o servidor com as
 variáveis de ambiente corretas.

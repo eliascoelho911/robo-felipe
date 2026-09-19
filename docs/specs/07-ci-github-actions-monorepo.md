@@ -9,7 +9,7 @@
 O AGENTS.md declarava "Não há CI automatizado. A verificação é por inspeção
 e comandos locais". Num repo onde a maior parte do código é escrita por
 agentes, isso significa confiar no autorrelato de cada sessão: nada garante
-que um PR que mexe no contrato não quebre Core e Android ao mesmo tempo,
+que um PR que mexe no override da Nuvem não valide o merge do compose,
 que o `manifest.json` de OTA aponte para um asset que existe, ou que a
 política de assinatura RSA do ADR-020 seja executada na ordem certa a cada
 release. O processo de release OTA era inteiramente manual (openssl na
@@ -20,44 +20,40 @@ errar.
 
 GitHub Actions no repo principal com três artefatos:
 
-1. **`ci.yml`** — 4 jobs paralelos por stack (ts, android, docker,
-   ota-manifest) em todo push para `tamagotchi` e PR.
+1. **`ci.yml`** — jobs paralelos por stack (docker, ota-manifest)
+   em todo push para `tamagotchi` e PR. (Quando o repo tinha stacks TS
+   e Android, havia também os jobs `ts` e `android` — removidos junto
+   com as stacks, ADR-018.)
 2. **`release.yml`** — pipeline de release OTA acionada por tag `v*.*.*`:
    build do firmware no container ESP-IDF, checagem de versão, assinatura
    RSA-4096, GitHub Release com assets, atualização do manifest.
 3. **`dependabot.yml`** — atualizações semanais agrupadas para
-   github-actions, npm (raiz + core + contract) e gradle.
+   github-actions. (Entradas npm/gradle removidas junto com as stacks.)
 
 A build de firmware em PRs comuns fica de fora — a CI do submódulo
 `firmware/` já a cobre.
 
 ## User Stories
 
-1. As a desenvolvedor, I want todo PR rodar `biome ci` e os testes
-   vitest do core e do contract, so that regressões TS não cheguem ao
-   branch default.
-2. As a desenvolvedor, I want todo PR rodar `./gradlew lint test
-   assembleDebug` (incluindo o build NDK do Opus), so that o app Android
-   compile e teste em cada mudança.
-3. As a desenvolvedor, I want todo PR validar o `docker compose config`
+1. As a desenvolvedor, I want todo PR validar o `docker compose config`
    da Nuvem, so que um override quebrado seja pego antes do deploy local.
-4. As a desenvolvedor, I want todo PR validar o `ota/manifest/manifest.json`
+2. As a desenvolvedor, I want todo PR validar o `ota/manifest/manifest.json`
    contra regras (type, semver, URLs de release), so that o pet nunca leia
    um manifest inválido.
-5. As a desenvolvedor, I want `git push` de uma tag `vX.Y.Z` disparar a
+3. As a desenvolvedor, I want `git push` de uma tag `vX.Y.Z` disparar a
    build do firmware cores3-felipe no container oficial do ESP-IDF,
    so que a release não dependa do meu ambiente local.
-6. As a desenvolvedor, I want a assinatura RSA-4096 feita com a chave
+4. As a desenvolvedor, I want a assinatura RSA-4096 feita com a chave
    vinda de um GitHub secret (nunca no repo), so que a política do
    ADR-020 seja executada sem exposição da chave privada.
-7. As a desenvolvedor, I want a release publicar `firmware.img` e
+5. As a desenvolvedor, I want a release publicar `firmware.img` e
    `filesystem.img` como assets e atualizar o manifest no branch default
    via commit validado, so que o dispositivo encontre a nova versão no
    próximo check.
-8. As a desenvolvedor, I want o release verificar que a versão do app
+6. As a desenvolvedor, I want o release verificar que a versão do app
    no binário bate com a tag, so que manifest e firmware nunca divergam.
-9. As a desenvolvedor, I want Dependabot abrir PRs semanais agrupados
-   para Actions, npm e Gradle, so que dependências não apodreçam.
+7. As a desenvolvedor, I want Dependabot abrir PRs semanais agrupados
+   para Actions, so que dependências não apodreçam.
 
 ## Implementation Decisions
 
@@ -65,16 +61,9 @@ A build de firmware em PRs comuns fica de fora — a CI do submódulo
 
 | Job | Passos |
 |:--|:--|
-| `ts` | `pnpm/action-setup@v4` (lê `packageManager` do package.json) → `setup-node@v4` node 22 + cache pnpm → `pnpm install --frozen-lockfile` → `pnpm exec biome ci .` → `pnpm -r test` → `pnpm --filter contract gen` |
-| `android` | `setup-java@v4` temurin 17 → `setup-gradle@v4` → `./gradlew lint test assembleDebug --stacktrace` em `android/` |
-| `docker` | init submódulo `esp32-server/upstream` → `docker compose --project-directory esp32-server -f <base> -f <override> config > /dev/null` |
+| `docker` | init submódulo `esp32-server/upstream` → `docker compose --project-directory esp32-server -f <base compose_all> -f <override> config > /dev/null` |
 | `ota-manifest` | `python3 ota/manifest/validate_manifest.py` |
 
-- **`biome ci`** (não `check`): modo CI falha em qualquer issue sem
-  tentar corrigir — recomendado pela doc do Biome.
-- **`--frozen-lockfile`**: PR com lockfile dessincronizado falha cedo.
-- **`contract gen` valida execução, não diff**: os schemas gerados são
-  gitignored; o job garante que a geração roda sem erro.
 - **Sem path filters no MVP**: repo pequeno, jobs rápidos, sinal completo
   a cada PR. Reversível se os tempos crescerem.
 
@@ -111,9 +100,8 @@ A build de firmware em PRs comuns fica de fora — a CI do submódulo
 
 ### Dependabot
 
-Três entradas semanais, grupo único (`patterns: ["*"]`) em cada:
-`github-actions` `/`; `npm` com `directories: ["/", "/core",
-"/packages/contract"]`; `gradle` `/android`.
+Uma entrada semanal, grupo único (`patterns: ["*"]`):
+`github-actions` `/`.
 
 ### Secret único requerido
 
@@ -149,10 +137,7 @@ manifest atual do repo passa na validação.
 ## Out of Scope
 
 - Build de firmware em PRs (CI do submódulo cobre; ver ADR-024).
-- Instrumented tests Android (`connectedAndroidTest` exige
-  emulador/device).
 - Self-test pós-OTA no dispositivo — Spec 08.
-- Deploy/hosting do Core (fora do escopo da fase-1).
 - Canary/rollout por dispositivo no manifest (upgrade futuro, ADR-020).
 
 ## Further Notes

@@ -10,14 +10,13 @@ diretamente com o dispositivo via WSS/Opus, sem relay. O
 `xinnan-tech/xiaozhi-esp32-server` (MIT, comunidade pt-BR) é a escolha
 arquitetural (ADR-022), mas precisa ser configurado com provedores pt-BR,
 persona do Robô Felipe, e API keys preenchidas. Sem isso, não há pipeline de
-voz para o app Android se conectar.
+voz para o device se conectar.
 
 ## Solution
 
 O fork do `xiaozhi-esp32-server` em `esp32-server/` é configurado via Docker
 Compose com provedores cloud pt-BR (GroqASR + gpt-4o-mini + EdgeTTS +
-ChatGLMVLLM), persona do Robô Felipe em pt-BR, exit_commands em pt-BR, e
-`CORE_HTTP_URL` apontando para o Core. O servidor sobe via
+ChatGLMVLLM), persona do Robô Felipe em pt-BR e exit_commands em pt-BR. O servidor sobe via
 `docker-compose.override.yml` e é demoable com `wscat` + push-to-talk manual.
 
 ## User Stories
@@ -35,21 +34,18 @@ ChatGLMVLLM), persona do Robô Felipe em pt-BR, exit_commands em pt-BR, e
    naturalmente.
 5. As a desenvolvedor, I want `wakeup_words` vazio ou ["Felipe", "ei
    Felipe"], so que não interfira no fluxo push-to-talk do MVP (ADR-021).
-6. As a desenvolvedor, I want `CORE_HTTP_URL` apontando para
-   `http://host.docker.internal:3000`, so that o adapter Python possa
-   chamar o Core do dentro do container.
-7. As a desenvolvedor, I want API keys (OpenAI, Groq, ChatGLM) preenchidas
+6. As a desenvolvedor, I want API keys (OpenAI, Groq, ChatGLM) preenchidas
    em `data/.config.yaml` (não no config.yaml tracked), so that as chaves
    não entrem no git.
 8. As a desenvolvedor, I want `server.auth.enabled = false` para MVP em LAN,
    so that eu não precise de tokens de dispositivo para testar localmente.
 9. As a desenvolvedor, I want o handshake WSS em
-   `ws://localhost:8000/xiaozhi/v1/`, so that o app Android possa conectar.
+   `ws://localhost:8000/xiaozhi/v1/`, so that o device possa conectar.
 10. As a desenvolvedor, I want o endpoint de visão em
     `http://localhost:8003/mcp/vision/explain`, so que o device possa
     enviar fotos da câmera (Fase 2).
 11. As a desenvolvedor, I want o servidor ser demoable com `wscat`, so that
-    eu possa validar o handshake sem o app Android.
+    eu possa validar o handshake sem o device físico.
 12. As a desenvolvedor, I want os logs de startup mostrando as URLs (WSS,
     visão, OTA, MCP endpoint), so that eu saiba onde apontar os clientes.
 13. As a desenvolvedor, I want `docker compose config` validar o override
@@ -66,7 +62,7 @@ selected_module:
   LLM: OpenAILLM         # gpt-4o-mini, ~$0.09/mês, function_call nativo
   VLLM: ChatGLMVLLM      # glm-4v-flash, free, visão multimodal
   TTS: EdgeTTS           # pt-BR-FranciscaNeural, free, vozes Neural Microsoft
-  Memory: nomem           # estado do pet mora no Core (ADR-023)
+  Memory: nomem           # estado do pet mora no próprio servidor (ADR-023)
   Intent: function_call   # gpt-4o-mini decide quando chamar tools
 ```
 
@@ -86,12 +82,6 @@ coloquial, child-safe. `language: "Português do Brasil"`.
 - `enable_greeting: false` (não sauda ao detectar wake word — não há wake
   word ativa no MVP).
 
-### CORE_HTTP_URL
-
-`http://host.docker.internal:3000` — acessa o Core rodando no host a partir
-do container Docker. `host.docker.internal` resolve para o IP do host no
-Docker Desktop (Linux/Mac/Windows).
-
 ### API keys (em `data/.config.yaml`, não tracked)
 
 - OpenAI (gpt-4o-mini LLM): `SUBSTITUA_POR_OPENAI_API_KEY`.
@@ -108,7 +98,7 @@ contém as chaves reais. O servidor lê `.config.yaml` com prioridade sobre
 `esp32-server/docker-compose.override.yml` sobe o xiaozhi-server. Portas:
 8000 (WSS voz), 8003 (HTTP visão+OTA), 8004 (MCP endpoint). Volume: config/
 montado em `/opt/xiaozhi-esp32-server/config`. `host.docker.internal`
-configurado para acesso ao Core no host.
+mapeado ao host via extra_hosts.
 
 ### server.auth
 
@@ -121,8 +111,9 @@ habilitar com whitelist de tokens de dispositivo.
   Opus bidirecional.
 - Visão: `http://localhost:8003/mcp/vision/explain` — POST multipart com foto
   + pergunta (Fase 2, ADR-017/022).
-- OTA: `http://localhost:8003/xiaozhi/ota/` — endpoint de checagem de
-  firmware (não usado no MVP Android, mas disponível para Fase 2 CoreS3).
+- OTA: `http://localhost:8003/xiaozhi/ota/` — endpoint de checagem do
+  xiaozhi (não usado no MVP — o OTA do projeto é pull via GitHub
+  Releases, ADR-020).
 
 ### Logs de startup
 
@@ -149,8 +140,7 @@ handshake WSS.
    sem subir containers. Deve retornar 0 erros.
 2. **Startup logs** — após `docker compose up`, os logs devem mostrar as
    URLs ativas sem erros de config. Verificar: `selected_module` carregado,
-   persona Robô Felipe ativa, `exit_commands` pt-BR, `CORE_HTTP_URL`
-   acessível.
+   persona Robô Felipe ativa, `exit_commands` pt-BR.
 3. **`wscat` handshake manual** — conectar a
    `ws://localhost:8000/xiaozhi/v1/` com headers `Device-Id`, `Client-Id`,
    `Protocol-Version: 1`, enviar `{"type":"hello","version":1,"transport":
@@ -166,20 +156,17 @@ handshake WSS.
 
 ## Out of Scope
 
-- Adapter Python (pet_tools.py) — Spec 04.
-- App Android (WSS client) — Spec 05.
-- OTA via xiaozhi-server (não usado no MVP Android; Fase 2 CoreS3 usa
-  esp32FOTA, ADR-020).
+- OTA via xiaozhi-server (o OTA do projeto é pull via GitHub Releases
+  com esp32FOTA, ADR-020).
 - Visão funcional (câmera é Fase 2, ADR-017; endpoint existe mas não é
-  exercitado no MVP Android).
+  exercitado no MVP).
 - `server.auth.enabled = true` (MVP em LAN; VPS futuro).
 - HA / replicação do xiaozhi-server (MVP single-instance).
 
 ## Further Notes
 
-- **Paralelo com Spec 01** — não depende do Core; pode ser configurado e
-  testado independentemente (embora o adapter Python precise do Core para
-  testar function calling).
+- **Spec independente** — pode ser configurada e testada sem o módulo
+  do pet no fork do servidor.
 - **Config.yaml já existe** no scaffold (`esp32-server/config/config.yaml`,
   120 linhas) com config pt-BR completa e placeholders de API keys. Esta
   spec valida que está correto e documenta as decisões.

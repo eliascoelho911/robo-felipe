@@ -49,53 +49,50 @@ bípede. Pinout e modelo 3D do chassi foram removidos deste branch.
 _Avoid_: cão robô, doggo, robô novo
 
 **Relay**:
-O smartphone (app Android já em desenvolvimento) que, nas variantes
-bípede/quadrúpede, termina TLS, converte PCM, e orquestra ASR→NLP→TTS
-com a nuvem (ver ADR-002). **Não se aplica ao Tamagotchi** (ADR-016
-revoga o relay para essa variante).
+O smartphone que, nas variantes bípede/quadrúpede, termina TLS, converte
+PCM, e orquestra ASR→NLP→TTS com a nuvem (ver ADR-002). **Não se aplica
+ao Tamagotchi** (ADR-016 revoga o relay para essa variante).
 _Avoid_: celular, gateway, broker
 
 **Nuvem**:
-Provedores externos de ASR, NLP/LLM e TTS acessados via HTTPS. Trocáveis
-sem mudar o firmware. No Tamagotchi o acesso parte direto do robô; nas
-variantes anteriores parte do relay.
-_Avoid_: servidor, backend
+O servidor auto-hospedado do projeto (fork do xiaozhi-esp32-server,
+ADR-022) com seus provedores plugáveis de ASR, LLM e TTS. Orquestra o
+pipeline de voz e **hospeda o comportamento do pet** — estado, stats,
+decay, estágios e tools (ADR-018, ADR-023). Os provedores são trocáveis
+sem mudar o firmware; o comportamento é código nosso no fork.
+_Avoid_: servidor, backend, core
 
 **xiaozhi-esp32**:
 Projeto de referência (GitHub `78/xiaozhi-esp32`) de robôs conversacionais
 Espressif, em ESP32-S3. Inspira o protocolo e a UX conversacional do
-Tamagotchi.
+Tamagotchi; o fork nosso é o firmware do device (ADR-021).
 _Avoid_: xiaozhi, o firmware de referência
 
+**xiaozhi-esp32-server**:
+Projeto de referência (GitHub `xinnan-tech/xiaozhi-esp32-server`) de
+servidor conversacional para robôs xiaozhi — ASR/LLM/TTS plugáveis,
+protocolo WSS+Opus com o device, plugins com acesso ao `conn`. O fork
+nosso é a Nuvem e o host do comportamento do pet (ADR-018, ADR-022).
+_Avoid_: o servidor upstream, xiaozhi-server upstream
+
 **Plataforma**:
-O host onde o Tamagotchi encarna — hoje o app Android de laboratório,
-depois o CoreS3. Detecta Triggers, envia Batches ao Core e executa
-Planos de Ações.
-_Avoid_: device, cliente, app (sozinho)
+O host onde o Tamagotchi encarna — o firmware do CoreS3 (ADR-021).
+Detecta Triggers e executa as Ações recebidas da Nuvem; não decide
+comportamento.
+_Avoid_: device, cliente, app (sozinho), Android
 
 **Trigger**:
-Evento detectado pela Plataforma, com timestamp e payload. Iniciais:
-`voice` (áudio após a hot key), `shake` (sacudida), `button_press`
-(toque de botão).
+Evento detectado pelo device, com timestamp e payload. Iniciais:
+`voice` (áudio da fala, que segue o pipeline de voz), `shake`
+(sacudida), `button` (toque de botão). Os não-vozeados vão à Nuvem como
+mensagens no protocolo WSS do xiaozhi (ADR-018, ADR-023).
 _Avoid_: evento, input, comando
 
-**Batch**:
-Envelope versionado com um ou mais Triggers enviado ao Core.
-_Avoid_: pacote, mensagem, request
-
-**Core**:
-Subsistema nosso, auto-hospedado em TypeScript, que processa Batches e
-responde com Planos de Ações. Pode chamar a Nuvem. Ver ADR-018.
-_Avoid_: core embarcado, firmware core, backend, cérebro
-
 **Ação**:
-Efeito que a Plataforma sabe executar — `speak`, `dance`,
-`express_emotion`, `get_dizzy`, `sleep`, entre outras.
+Efeito que o device sabe executar — `speak`, `dance`,
+`express_emotion`, `get_dizzy`, `sleep`, entre outras. Chegam ao device
+via mensagens `pet_action` no protocolo WSS do xiaozhi (ADR-018, ADR-023).
 _Avoid_: comando, output
-
-**Plano de Ações**:
-Resposta do Core — lista ordenada de uma ou mais Ações.
-_Avoid_: output, resposta, resultado
 
 **ESP-HI**:
 Design de referência (makerworld + oshwhub) de cão robô baixo-custo em
