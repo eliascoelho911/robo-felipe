@@ -55,18 +55,6 @@ env/
 /print.log
 *.log
 
-# ---------- Android (app relay) ----------
-# Paths locais e caches do Gradle (o android/.gitignore já cobre; repetimos
-# por segurança caso o submodule seja tratado como tree única).
-android/local.properties
-android/.gradle/
-android/app/build/
-android/build/
-android/.idea/
-android/captures/
-android/.cxx/
-android/.externalNativeBuild/
-
 # ---------- Node.js / TypeScript (Core + contract, ADR-018/023) ----------
 # Dependências
 node_modules/

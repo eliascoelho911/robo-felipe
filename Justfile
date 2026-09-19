@@ -1,6 +1,6 @@
 # Justfile do robo-felipe — recipes multi-linguagem.
 # Instale `just` na sua máquina (https://github.com/casey/just).
-# O workspace TS usa pnpm; android/ usa Gradle; firmware/ usa ESP-IDF;
+# O workspace TS usa pnpm; firmware/ usa ESP-IDF;
 # esp32-server/ usa Docker. Este arquivo orquestra todos.
 
 # default: lista as recipes
@@ -43,28 +43,6 @@ contract-test:
 # Gera JSON Schema a partir dos schemas Zod do contrato
 contract-gen:
     npx -y pnpm@latest --filter contract gen
-
-# --- Android (Plataforma atual) ---
-
-# Testes unitários do app Android
-android-test:
-    cd android && ./gradlew test
-
-# Build debug do app Android
-android-build:
-    cd android && ./gradlew assembleDebug
-
-# Lint do app Android
-android-lint:
-    cd android && ./gradlew lint
-
-# Builda e instala o app no device/emulador conectado (adb detecta via Gradle)
-android-install:
-    cd android && ./gradlew installDebug
-
-# Lista os devices/emuladores conectados
-android-devices:
-    adb devices
 
 # --- Nuvem (xiaozhi-esp32-server, Docker) ---
 

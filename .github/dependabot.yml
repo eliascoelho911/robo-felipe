@@ -21,12 +21,3 @@ updates:
     groups:
       npm-workspace:
         patterns: ["*"]
-
-  # App Android (version catalog + build.gradle.kts).
-  - package-ecosystem: gradle
-    directory: /android
-    schedule:
-      interval: weekly
-    groups:
-      gradle:
-        patterns: ["*"]

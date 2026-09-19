@@ -37,24 +37,6 @@ jobs:
         # roda sem erro com os schemas Zod atuais.
         run: pnpm --filter contract gen
 
-  android:
-    name: Android (Plataforma)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - uses: gradle/actions/setup-gradle@v6
-
-      # Inclui o build nativo NDK/CMake (Opus) via externalNativeBuild.
-      - name: Lint + testes + build debug
-        working-directory: android
-        run: ./gradlew lint test assembleDebug --stacktrace
-
   docker:
     name: Nuvem (docker compose config)
     runs-on: ubuntu-24.04
