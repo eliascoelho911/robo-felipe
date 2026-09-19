@@ -55,26 +55,6 @@ env/
 /print.log
 *.log
 
-# ---------- Node.js / TypeScript (Core + contract, ADR-018/023) ----------
-# Dependências
-node_modules/
-# Saídas de build do TS (tsc outDir)
-dist/
-# Banco SQLite do Core — estado cloud-primary do pet (ADR-023)
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-# Variáveis de ambiente do Core (CORE_PORT, segredos etc.)
-core/.env
-# JSON Schemas gerados a partir do Zod (canônico em packages/contract/src).
-# `just contract-gen` regenera; não edite nem commite.
-packages/contract/schemas/
-# Cache do pnpm
-.pnpm-store/
-# Cache incremental do tsc — regenerado a cada build, nunca versionado
-*.tsbuildinfo
-
 # ---------- Nuvem (xiaozhi-esp32-server, ADR-022) ----------
 # Segredos ficam fora do repo (separado do config.yaml de placeholders).
 # `esp32-server/config/.gitignore` cobre `.config.yaml`, `secrets.yaml`, `.env`.

@@ -9,34 +9,6 @@ permissions:
   contents: read
 
 jobs:
-  ts:
-    name: TypeScript (core + contract)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6
-        # Lê a versão do campo packageManager do package.json raiz.
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Instala dependências (frozen lockfile)
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (biome ci — falha sem corrigir)
-        run: pnpm exec biome ci .
-
-      - name: Testes (vitest — core + contract)
-        run: pnpm -r test
-
-      - name: Gera JSON Schema do contrato
-        # Os schemas gerados são gitignored; aqui só validamos que a geração
-        # roda sem erro com os schemas Zod atuais.
-        run: pnpm --filter contract gen
-
   docker:
     name: Nuvem (docker compose config)
     runs-on: ubuntu-24.04

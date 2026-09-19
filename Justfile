@@ -1,48 +1,10 @@
 # Justfile do robo-felipe — recipes multi-linguagem.
 # Instale `just` na sua máquina (https://github.com/casey/just).
-# O workspace TS usa pnpm; firmware/ usa ESP-IDF;
-# esp32-server/ usa Docker. Este arquivo orquestra todos.
+# O firmware usa ESP-IDF; esp32-server/ usa Docker. Este arquivo orquestra.
 
 # default: lista as recipes
 default:
     @just --list
-
-# --- TypeScript (workspace pnpm) ---
-
-# Instala dependências do workspace TS
-install:
-    npx -y pnpm@latest install
-
-# Lint/format checa todo o workspace TS
-lint:
-    npx -y pnpm@latest run lint
-
-# Formata todo o workspace TS
-format:
-    npx -y pnpm@latest run format
-
-# Testa tudo (vitest)
-test:
-    npx -y pnpm@latest -r test
-
-# Roda o Core em modo dev (Hono HTTP REST). Padrão :8090; customizável
-# com `just core-dev <porta>`. Node 24 no PATH: better-sqlite3 13
-# segfaulta no dlopen com o node 22 desta máquina (AGENTS.md, Project
-# Learnings).
-core-dev port="8090":
-    PATH="$HOME/.local/opt/node-v24.3.0-linux-x64/bin:$PATH" CORE_PORT={{port}} npx -y pnpm@latest --filter core dev
-
-# Testa só o Core
-core-test:
-    npx -y pnpm@latest --filter core test
-
-# Testa só o contrato (packages/contract)
-contract-test:
-    npx -y pnpm@latest --filter contract test
-
-# Gera JSON Schema a partir dos schemas Zod do contrato
-contract-gen:
-    npx -y pnpm@latest --filter contract gen
 
 # --- Nuvem (xiaozhi-esp32-server, Docker) ---
 

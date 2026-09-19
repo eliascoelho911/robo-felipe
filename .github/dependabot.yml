@@ -8,16 +8,3 @@ updates:
     groups:
       actions:
         patterns: ["*"]
-
-  # Workspace pnpm (raiz + core + contract) — um único lockfile na raiz,
-  # agrupado por dependência para abrir um PR só por bump.
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /core
-      - /packages/contract
-    schedule:
-      interval: weekly
-    groups:
-      npm-workspace:
-        patterns: ["*"]
