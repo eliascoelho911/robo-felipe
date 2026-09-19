@@ -1,7 +1,7 @@
 {
-  "configuration": "JTAGAdapter=default,PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default",
-  "board": "esp32:esp32:esp32",
-  "programmer": "esptool",
-  "port": "/dev/ttyUSB0",
-  "sketch": "samples/stream_mic_serial/stream_mic_serial.ino"
+    "configuration": "JTAGAdapter=default,PSRAM=enabled,FlashMode=qio,FlashSize=16M,LoopCore=1,EventsCore=1,USBMode=hwcdc,CDCOnBoot=cdc,MSCOnBoot=default,DFUOnBoot=default,UploadMode=default,PartitionScheme=app3M_fat9M_16MB,CPUFreq=240,UploadSpeed=921600,DebugLevel=none,EraseFlash=none",
+    "board": "m5stack:esp32:m5stack_cores3",
+    "programmer": "esptool",
+    "port": "/dev/ttyACM0",
+    "sketch": "samples/stream_mic_serial/stream_mic_serial.ino"
 }

@@ -68,26 +68,31 @@ android-devices:
 
 # --- Nuvem (xiaozhi-esp32-server, Docker) ---
 
-# Sobe a Nuvem local (base do upstream + override de config pt-BR).
+# Sobe a Nuvem local (stack completo do upstream + override de config pt-BR).
+# compose_all = websocket + console (manager-api/web :8002) + MySQL + Redis,
+# exigidos pela ativação de device (código de 6 dígitos vive no Redis) e pelo
+# registro do device no MySQL.
 # --project-directory esp32-server faz os paths relativos (./config, ./data,
 # ./models) resolverem contra esp32-server/, e não contra o dir do base do
 # upstream (ver cabeçalho do override para o porquê).
-# -f base primeiro, -f override depois: o override mescla sobre o base.
+# -f base primeiro, -f override depois: o override mescla sobre o base —
+# o mount de config/.config.yaml entra junto do ./data do compose_all
+# (volumes acumulam por target) e o !override mantém 8091/8003 no host.
 esp32-server-up:
     docker compose --project-directory esp32-server \
-                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose_all.yml \
                    -f esp32-server/docker-compose.override.yml up -d
 
-# Valida a config do compose (merge base+override) sem subir.
+# Valida a config do compose (merge stack completo+override) sem subir.
 esp32-server-check:
     docker compose --project-directory esp32-server \
-                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose_all.yml \
                    -f esp32-server/docker-compose.override.yml config
 
 # Para a Nuvem e remove contêineres (redes/volumes nomeados preservados).
 esp32-server-down:
     docker compose --project-directory esp32-server \
-                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose.yml \
+                   -f esp32-server/upstream/main/xiaozhi-server/docker-compose_all.yml \
                    -f esp32-server/docker-compose.override.yml down
 
 # Recria a Nuvem: down + up, forçando recriação dos contêineres
@@ -101,8 +106,21 @@ esp32-server-recreate:
 # Build do firmware da variante felipe (exige ESP-IDF sourced).
 # WAKE_WORD_DISABLED e LANGUAGE_PT_BR já vêm no config.json da variante;
 # --language pt-BR garante o locale sem depender de menuconfig.
+# bash -c porque a recipe roda em sh (dash), que não tem `source`, e o
+# export.sh do ESP-IDF é bash-script;
+# instalado sem sudo (sistema não tem cmake).
 firmware-build:
-    cd firmware && python3 scripts/build.py m5stack/cores3-felipe --name cores3-felipe --language pt-BR
+    bash -c 'source "$HOME/esp/esp-idf/export.sh" && export PATH="$HOME/.local/opt/bin:$PATH" && cd firmware && python3 scripts/build.py m5stack/cores3-felipe --name cores3-felipe --language pt-BR'
+
+# Instala a imagem buildada no CoreS3 (exige ESP-IDF sourced e o device
+# em modo download). O CoreS3 entra em download via USB-Serial-JTAG;
+# se o flash falhar, segure o botão do meio e dê um toque no reset.
+# Porta default vem de .vscode/arduino.json.
+# idf.py via python3 (e não o console-script) porque o cache do projeto
+# gravou o intérprete com que o build.py o rodou; o mismatch
+# python/python3 faz o idf.py abortar.
+firmware-flash port="/dev/ttyACM0":
+    bash -c 'source "$HOME/esp/esp-idf/export.sh" && export PATH="$HOME/.local/opt/bin:$PATH" && cd firmware && python3 "$IDF_PATH/tools/idf.py" -p {{port}} flash'
 
 # Regenera lang_config.h do locale pt-BR (o build da CMake faz isso
 # automaticamente; esta recipe é para rodar à mão após editar language.json).

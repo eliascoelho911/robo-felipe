@@ -350,3 +350,11 @@ pertinente e limpe aqui.
   após `pnpm --filter core build` (porta default 8090, `CORE_PORT` para
   trocar). Nesta rede, a máquina dev é `192.168.1.21` — o app Android
   deve apontar o coreUrl para ela, não para o default `192.168.1.100`.
+- 2026-09-14: [esp32-server] O `prompt_manager.py` envolve o prompt no
+  template `agent-base-prompt.txt` (upstream, centrado em zh) e injeta
+  `{{language}}` a partir de `config.TTS.<provider>.language` — se a
+  chave não existir, defaulta para **中文** e o LLM responde em chinês;
+  a voz pt-BR (Francisca) então falha com "No audio was received"
+  (Edge TTS não sintetiza caracteres chineses). Fix: `language:` no
+  bloco TTS do `.config.yaml`. O template upstream é zh-cêntrico — um
+  template pt-BR próprio é melhoria futura.
